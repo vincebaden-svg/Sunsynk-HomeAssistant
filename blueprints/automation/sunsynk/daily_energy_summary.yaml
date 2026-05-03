@@ -1,0 +1,28 @@
+blueprint:
+  name: "Sunsynk: Daily Energy Summary"
+  description: >
+    Sends a daily energy summary notification with today's solar generation,
+    grid usage, and battery statistics.
+  domain: automation
+  source_url: https://github.com/vinbaden/ha-sunsynk
+  input:
+    notify_target:
+      name: Notification Service
+      description: "The notify service to use (e.g. notify.telegram)"
+      selector:
+        text:
+
+trigger:
+  - platform: event
+    event_type: sunsynk_daily_summary
+
+action:
+  - service: !input notify_target
+    data:
+      message: >
+        ☀️ Daily Energy Summary ({{ trigger.event.data.date }})
+        PV Generated: {{ trigger.event.data.pv_energy_today | round(1) }} kWh
+        Grid Import: {{ trigger.event.data.grid_import_today | round(1) }} kWh
+        Grid Export: {{ trigger.event.data.grid_export_today | round(1) }} kWh
+        Load: {{ trigger.event.data.load_energy_today | round(1) }} kWh
+        Battery Charged: {{ trigger.event.data.battery_charge_today | round(1) }} kWh

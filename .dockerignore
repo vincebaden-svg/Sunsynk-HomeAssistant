@@ -1,0 +1,13 @@
+.git
+.github
+.devcontainer
+tests/
+*.md
+*.yaml
+!requirements.txt
+__pycache__
+*.pyc
+*.pyo
+.env
+_bmad-output/
+docs/

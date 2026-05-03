@@ -1,0 +1,67 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Sunsynk Solar Inverter",
+        "description": "Choose your API connection method.",
+        "data": {
+          "api_mode": "API Mode"
+        }
+      },
+      "ssl_warning": {
+        "title": "Security Warning",
+        "description": "{warning}",
+        "data": {
+          "acknowledged": "I understand and accept the security risk"
+        }
+      },
+      "official_creds": {
+        "title": "Official API Credentials",
+        "description": "Enter your Sunsynk OpenAPI credentials.",
+        "data": {
+          "app_key": "App Key",
+          "app_secret": "App Secret"
+        }
+      },
+      "unofficial_creds": {
+        "title": "Sunsynk Connect Credentials",
+        "description": "Enter your Sunsynk Connect account credentials.",
+        "data": {
+          "username": "Email Address",
+          "password": "Password",
+          "region": "API Region"
+        }
+      },
+      "inverter": {
+        "title": "Inverter Details",
+        "description": "Enter your inverter serial number.",
+        "data": {
+          "inverter_sn": "Inverter Serial Number"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect. Check your credentials and try again.",
+      "invalid_auth": "Invalid credentials. Please check your username and password.",
+      "unknown": "Unexpected error. Check the logs for details."
+    },
+    "abort": {
+      "already_configured": "This inverter is already configured.",
+      "not_implemented": "Configuration not yet implemented."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Sunsynk Options",
+        "data": {
+          "poll_interval_minutes": "Poll Interval (minutes)",
+          "soc_threshold": "Battery SOC Alert Threshold (%)",
+          "solar_threshold": "Solar Generation Alert Threshold (W)",
+          "summary_time": "Daily Summary Time (HH:MM)",
+          "retention_days": "Data Retention (days)"
+        }
+      }
+    }
+  }
+}

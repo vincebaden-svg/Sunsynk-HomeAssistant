@@ -1,0 +1,73 @@
+blueprint:
+  name: "Sunsynk: Grid Failure Load Management"
+  description: >
+    Sends a notification when the grid fails or is restored.
+    Optionally controls a switch (e.g. pool motor) automatically on grid failure.
+  domain: automation
+  source_url: https://github.com/vinbaden/ha-sunsynk
+  input:
+    notify_target:
+      name: Notification Service
+      description: "The notify service to use (e.g. notify.telegram or notify.mobile_app)"
+      selector:
+        text:
+    soc_threshold:
+      name: Battery SOC Threshold (%)
+      description: "Include battery SOC in the notification message"
+      default: 20
+      selector:
+        number:
+          min: 0
+          max: 100
+          unit_of_measurement: "%"
+    failure_message:
+      name: Grid Failure Message
+      description: "Message to send when grid fails"
+      default: "⚡ Grid failure detected. Battery at {soc}%. Please avoid heavy loads."
+      selector:
+        text:
+    restored_message:
+      name: Grid Restored Message
+      description: "Message to send when grid is restored"
+      default: "✅ Grid restored. Battery at {soc}%."
+      selector:
+        text:
+    control_switch:
+      name: Switch to Control (optional)
+      description: "A switch to turn OFF when grid fails (e.g. pool motor)"
+      default: {}
+      selector:
+        entity:
+          domain: switch
+
+trigger:
+  - platform: event
+    event_type: sunsynk_grid_failure
+    id: grid_failure
+  - platform: event
+    event_type: sunsynk_grid_restored
+    id: grid_restored
+
+action:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id: grid_failure
+        sequence:
+          - service: !input notify_target
+            data:
+              message: !input failure_message
+          - if:
+              - condition: template
+                value_template: "{{ control_switch != {} }}"
+            then:
+              - service: switch.turn_off
+                target:
+                  entity_id: !input control_switch
+      - conditions:
+          - condition: trigger
+            id: grid_restored
+        sequence:
+          - service: !input notify_target
+            data:
+              message: !input restored_message

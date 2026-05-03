@@ -1,0 +1,28 @@
+blueprint:
+  name: "Sunsynk: Low Battery Alert"
+  description: >
+    Sends a notification when battery SOC drops below a configurable threshold.
+    Fires on every poll while SOC remains below threshold.
+  domain: automation
+  source_url: https://github.com/vinbaden/ha-sunsynk
+  input:
+    notify_target:
+      name: Notification Service
+      description: "The notify service to use (e.g. notify.telegram)"
+      selector:
+        text:
+    message:
+      name: Alert Message
+      description: "Message to send when battery is low"
+      default: "🔋 Battery low! SOC at {soc}% (threshold: {threshold}%). Consider reducing load."
+      selector:
+        text:
+
+trigger:
+  - platform: event
+    event_type: sunsynk_battery_low
+
+action:
+  - service: !input notify_target
+    data:
+      message: !input message

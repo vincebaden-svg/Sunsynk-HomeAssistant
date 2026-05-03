@@ -1,0 +1,2 @@
+sunsynk-api-client>=0.1.0
+aiosqlite>=0.20.0

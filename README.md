@@ -2,6 +2,8 @@
 
 A Home Assistant custom integration for Sunsynk solar inverters.
 
+**Repository:** https://github.com/vincebaden-svg/Sunsynk-HomeAssistant
+
 ## Overview
 
 The Sunsynk HA integration transforms a Sunsynk solar inverter from a passively monitored device into an active participant in home energy management. It exposes inverter data as Home Assistant entities and provides automation blueprints for common energy management scenarios.

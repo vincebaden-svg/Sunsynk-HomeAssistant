@@ -79,11 +79,15 @@ class OfficialApiClient(SunsynkApiClient):
         app_key: str,
         app_secret: str,
         inverter_sn: str,
+        username: str = "",
+        password: str = "",
     ) -> None:
         """Initialize the official API client."""
         self._app_key = app_key
         self._app_secret = app_secret
         self._inverter_sn = inverter_sn
+        self._username = username
+        self._password = password
         self._access_token: str | None = None
         self._session: aiohttp.ClientSession | None = None
 
@@ -118,11 +122,11 @@ class OfficialApiClient(SunsynkApiClient):
         }
 
     async def authenticate(self) -> None:
-        """Authenticate using appKey/appSecret with HMAC-SHA256 signing."""
+        """Authenticate using username/password with HMAC-SHA256 signed headers."""
         path = "/oauth/token"
         body_data = {
-            "username": "",  # Not used for official API — key/secret auth
-            "password": "",
+            "username": self._username,
+            "password": self._password,
             "grant_type": "password",
             "client_id": "openapi",
         }

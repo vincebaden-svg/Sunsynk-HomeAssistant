@@ -34,6 +34,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             app_key=entry.data["app_key"],
             app_secret=entry.data["app_secret"],
             inverter_sn=inverter_sn,
+            username=entry.data.get("username", ""),
+            password=entry.data.get("password", ""),
         )
     else:
         client = UnofficialApiClient(

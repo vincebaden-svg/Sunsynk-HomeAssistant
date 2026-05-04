@@ -83,7 +83,7 @@ class SunsynkConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Step 1: Choose API mode."""
+        """Step 1: Choose API mode — default to Official API."""
         if user_input is not None:
             self._data["api_mode"] = user_input["api_mode"]
             if user_input["api_mode"] == API_MODE_OFFICIAL:
@@ -92,10 +92,14 @@ class SunsynkConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="user",
-            data_schema=SCHEMA_API_MODE,
+            data_schema=vol.Schema({
+                vol.Required("api_mode", default=API_MODE_OFFICIAL): vol.In(
+                    [API_MODE_OFFICIAL, API_MODE_UNOFFICIAL]
+                ),
+            }),
             description_placeholders={
-                "official": "Official API (appKey + appSecret)",
-                "unofficial": "Unofficial API (username + password)",
+                "official": "Official API (appKey + appSecret) — recommended",
+                "unofficial": "Unofficial API (username + password) — may be blocked by Cloudflare",
             },
         )
 

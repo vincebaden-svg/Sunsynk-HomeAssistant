@@ -199,6 +199,8 @@ class SunsynkConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 app_key=self._data["app_key"],
                 app_secret=self._data["app_secret"],
                 inverter_sn=self._data.get("inverter_sn", ""),
+                username=self._data.get("username", ""),
+                password=self._data.get("password", ""),
             )
         else:
             from .api.unofficial import UnofficialApiClient

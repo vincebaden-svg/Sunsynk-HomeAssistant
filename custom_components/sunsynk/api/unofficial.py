@@ -61,7 +61,8 @@ class UnofficialApiClient(SunsynkApiClient):
     async def authenticate(self) -> None:
         """Authenticate using username/password via the Sunsynk Connect API."""
         session = self._get_session()
-        url = f"{self._base_url}/oauth/token"
+        # Note: The correct auth endpoint is /oauth/token/new (not /oauth/token)
+        url = f"{self._base_url}/oauth/token/new"
         payload = {
             "areaCode": "sunsynk",
             "client_id": "csp-web",

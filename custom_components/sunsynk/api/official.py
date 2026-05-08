@@ -16,7 +16,7 @@ from .exceptions import SunsynkAuthError, SunsynkCommunicationError
 
 _LOGGER = logging.getLogger(__name__)
 
-OFFICIAL_API_BASE = "http://openapi.sunsynk.net"
+OFFICIAL_API_BASE = "https://openapi.sunsynk.net"
 
 
 def _compute_md5(data: str) -> str:
@@ -140,10 +140,20 @@ class OfficialApiClient(SunsynkApiClient):
                 headers=headers,
                 data=body,
             ) as resp:
+                _LOGGER.debug(
+                    "Official API auth response: status=%s url=%s",
+                    resp.status, resp.url
+                )
                 if resp.status in (401, 403):
                     raise SunsynkAuthError(
                         f"Official API authentication failed: HTTP {resp.status}"
                     )
+                if resp.status == 404:
+                    raise SunsynkCommunicationError(
+                        f"Official API endpoint not found (404): {resp.url}. "
+                        "Check that openapi.sunsynk.net is accessible and the endpoint path is correct."
+                    )
+                resp.raise_for_status()
                 resp.raise_for_status()
                 data = await resp.json()
 

@@ -5,7 +5,7 @@
   "config_flow": true,
   "documentation": "https://github.com/vincebaden-svg/Sunsynk-HomeAssistant",
   "iot_class": "cloud_polling",
-  "requirements": ["sunsynk-api-client>=0.1.0", "aiosqlite>=0.20.0"],
+  "requirements": ["aiosqlite>=0.20.0"],
   "codeowners": ["@vincebaden-svg"],
   "homeassistant": "2024.1.0"
 }

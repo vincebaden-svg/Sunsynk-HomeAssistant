@@ -13,61 +13,17 @@ from homeassistant.data_entry_flow import FlowResult
 from .const import (
     API_MODE_OFFICIAL,
     API_MODE_UNOFFICIAL,
-    DEFAULT_POLL_INTERVAL,
     DEFAULT_RETENTION_DAYS,
     DEFAULT_SOC_THRESHOLD,
     DEFAULT_SOLAR_THRESHOLD,
     DEFAULT_SUMMARY_TIME,
     DOMAIN,
-    MAX_POLL_INTERVAL,
-    MIN_POLL_INTERVAL,
 )
 
 _LOGGER = logging.getLogger(__name__)
 
-STEP_API_MODE = "api_mode"
-STEP_OFFICIAL_CREDS = "official_creds"
-STEP_UNOFFICIAL_CREDS = "unofficial_creds"
-STEP_SSL_WARNING = "ssl_warning"
-STEP_INVERTER = "inverter"
-
-SCHEMA_API_MODE = vol.Schema({
-    vol.Required("api_mode", default=API_MODE_UNOFFICIAL): vol.In(
-        [API_MODE_UNOFFICIAL, API_MODE_OFFICIAL]
-    ),
-})
-
-SCHEMA_OFFICIAL_CREDS = vol.Schema({
-    vol.Required("app_key"): str,
-    vol.Required("app_secret"): str,
-})
-
-SCHEMA_UNOFFICIAL_CREDS = vol.Schema({
-    vol.Required("username"): str,
-    vol.Required("password"): str,
-    vol.Optional("region", default="api.sunsynk.net"): vol.In(
-        ["api.sunsynk.net", "pv.inteless.com"]
-    ),
-})
-
 SCHEMA_INVERTER = vol.Schema({
     vol.Required("inverter_sn"): str,
-})
-
-SCHEMA_OPTIONS = vol.Schema({
-    vol.Optional("poll_interval_minutes", default=5): vol.All(
-        int, vol.Range(min=5, max=60)
-    ),
-    vol.Optional("soc_threshold", default=DEFAULT_SOC_THRESHOLD): vol.All(
-        float, vol.Range(min=0, max=100)
-    ),
-    vol.Optional("solar_threshold", default=DEFAULT_SOLAR_THRESHOLD): vol.All(
-        float, vol.Range(min=0, max=20000)
-    ),
-    vol.Optional("summary_time", default=DEFAULT_SUMMARY_TIME): str,
-    vol.Optional("retention_days", default=DEFAULT_RETENTION_DAYS): vol.All(
-        int, vol.Range(min=1, max=365)
-    ),
 })
 
 
@@ -83,11 +39,11 @@ class SunsynkConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Step 1: Choose API mode — default to Official API."""
+        """Step 1: Choose API mode."""
         if user_input is not None:
             self._data["api_mode"] = user_input["api_mode"]
             if user_input["api_mode"] == API_MODE_OFFICIAL:
-                return await self.async_step_ssl_warning()
+                return await self.async_step_official_creds()
             return await self.async_step_unofficial_creds()
 
         return self.async_show_form(
@@ -97,41 +53,12 @@ class SunsynkConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     [API_MODE_OFFICIAL, API_MODE_UNOFFICIAL]
                 ),
             }),
-            description_placeholders={
-                "official": "Official API (appKey + appSecret) — recommended",
-                "unofficial": "Unofficial API (username + password) — may be blocked by Cloudflare",
-            },
-        )
-
-    async def async_step_ssl_warning(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
-        """Step 2a: SSL warning for Official API."""
-        if user_input is not None:
-            if user_input.get("acknowledged"):
-                return await self.async_step_official_creds()
-            # User did not acknowledge — go back
-            return await self.async_step_user()
-
-        return self.async_show_form(
-            step_id="ssl_warning",
-            data_schema=vol.Schema({
-                vol.Required("acknowledged", default=False): bool,
-            }),
-            description_placeholders={
-                "warning": (
-                    "⚠️ SECURITY WARNING: The official Sunsynk API requires SSL "
-                    "verification to be disabled. This means your API credentials "
-                    "could be intercepted on untrusted networks. Only use this on "
-                    "a trusted home network. Check the box below to acknowledge."
-                )
-            },
         )
 
     async def async_step_official_creds(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Step 2b: Official API credentials."""
+        """Step 2a: Official API credentials (appKey + appSecret + account)."""
         errors: dict[str, str] = {}
 
         if user_input is not None:
@@ -140,14 +67,22 @@ class SunsynkConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="official_creds",
-            data_schema=SCHEMA_OFFICIAL_CREDS,
+            data_schema=vol.Schema({
+                vol.Required("app_key"): str,
+                vol.Required("app_secret"): str,
+                vol.Required("username"): str,
+                vol.Required("password"): str,
+            }),
             errors=errors,
         )
 
     async def async_step_unofficial_creds(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Step 2c: Unofficial API credentials."""
+        """Step 2b: Unofficial API credentials (username + password).
+
+        Note: May not work on newer accounts due to Cloudflare bot protection.
+        """
         errors: dict[str, str] = {}
 
         if user_input is not None:
@@ -156,20 +91,24 @@ class SunsynkConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="unofficial_creds",
-            data_schema=SCHEMA_UNOFFICIAL_CREDS,
+            data_schema=vol.Schema({
+                vol.Required("username"): str,
+                vol.Required("password"): str,
+                vol.Optional("region", default="api.sunsynk.net"): vol.In(
+                    ["api.sunsynk.net", "pv.inteless.com"]
+                ),
+            }),
             errors=errors,
         )
 
     async def async_step_inverter(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Step 3: Inverter serial number and region."""
+        """Step 3: Inverter serial number."""
         errors: dict[str, str] = {}
 
         if user_input is not None:
             self._data.update(user_input)
-
-            # Validate credentials against the API
             try:
                 await self._validate_credentials()
             except Exception as err:  # noqa: BLE001

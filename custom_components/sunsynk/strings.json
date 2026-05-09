@@ -8,24 +8,19 @@
           "api_mode": "API Mode"
         }
       },
-      "ssl_warning": {
-        "title": "Security Warning",
-        "description": "{warning}",
-        "data": {
-          "acknowledged": "I understand and accept the security risk"
-        }
-      },
       "official_creds": {
         "title": "Official API Credentials",
-        "description": "Enter your Sunsynk OpenAPI credentials.",
+        "description": "Enter your Sunsynk OpenAPI credentials and account details.",
         "data": {
           "app_key": "App Key",
-          "app_secret": "App Secret"
+          "app_secret": "App Secret",
+          "username": "Sunsynk Account Email",
+          "password": "Sunsynk Account Password"
         }
       },
       "unofficial_creds": {
         "title": "Sunsynk Connect Credentials",
-        "description": "Enter your Sunsynk Connect account credentials.",
+        "description": "Note: may not work on newer accounts due to Cloudflare protection.",
         "data": {
           "username": "Email Address",
           "password": "Password",
@@ -34,7 +29,6 @@
       },
       "inverter": {
         "title": "Inverter Details",
-        "description": "Enter your inverter serial number.",
         "data": {
           "inverter_sn": "Inverter Serial Number"
         }
@@ -42,12 +36,10 @@
     },
     "error": {
       "cannot_connect": "Failed to connect. Check your credentials and try again.",
-      "invalid_auth": "Invalid credentials. Please check your username and password.",
       "unknown": "Unexpected error. Check the logs for details."
     },
     "abort": {
-      "already_configured": "This inverter is already configured.",
-      "not_implemented": "Configuration not yet implemented."
+      "already_configured": "This inverter is already configured."
     }
   },
   "options": {

@@ -130,7 +130,8 @@ class OfficialApiClient(SunsynkApiClient):
             "grant_type": "password",
             "client_id": "openapi",
         }
-        body = json.dumps(body_data)
+        # Use separators without spaces and sort_keys for consistent MD5
+        body = json.dumps(body_data, separators=(",", ":"), sort_keys=False)
         headers = self._build_signed_headers("POST", path, body)
 
         session = self._get_session()

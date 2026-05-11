@@ -41,10 +41,10 @@ WRITE_SAFE_RANGES: dict[str, tuple[float, float]] = {
 
 # Write tier assignments
 WRITE_TIERS: dict[str, int] = {
-    # Tier 1 — confirmation required (financial/grid impact)
-    "solar_sell": WRITE_TIER_1,
-    "grid_sell": WRITE_TIER_1,
-    "sell_time": WRITE_TIER_1,
+    # Tier 1 — confirmation required (financial/grid impact) — DEPRIORITISED
+    # "solar_sell": WRITE_TIER_1,
+    # "grid_sell": WRITE_TIER_1,
+    # "sell_time": WRITE_TIER_1,
     # Tier 2 — logged only (operational, reversible)
     "battery_priority": WRITE_TIER_2,
     "grid_charge": WRITE_TIER_2,

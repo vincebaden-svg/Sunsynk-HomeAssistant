@@ -715,10 +715,86 @@ class OfficialApiClient(SunsynkApiClient):
             ) from err
 
     async def write_setting(self, key: str, value: Any) -> None:
-        """Write a setting (not yet implemented)."""
+        """Write a setting to the inverter via POST /api/v1/common/setting/{sn}/set.
+
+        The Sunsynk API expects a JSON body with the inverter serial number
+        and one or more setting key-value pairs. Boolean values must be sent
+        as actual booleans, time values as strings like "06:00", and numeric
+        values as strings.
+        """
         await self._ensure_authenticated()
-        raise NotImplementedError(
-            f"Official API write for {key} not yet implemented"
+
+        sn = self._inverter_sn
+        session = self._get_session()
+        url = f"{UNOFFICIAL_API_BASE}/api/v1/common/setting/{sn}/set"
+
+        # Build the payload — sn is always required
+        payload: dict[str, Any] = {"sn": sn}
+
+        # Map high-level keys to Sunsynk API field names
+        key_mapping = {
+            "work_mode": "sysWorkMode",
+            "battery_priority": "battMode",
+            "grid_charge": "gridCharge",
+            "solar_sell": "solarSell",
+        }
+        api_key = key_mapping.get(key, key)
+
+        # Convert values to the format the API expects
+        if isinstance(value, bool):
+            # Some boolean fields use true/false, others use "1"/"0"
+            if api_key in (
+                "time1on", "time2on", "time3on", "time4on", "time5on", "time6on",
+                "genTime1on", "genTime2on", "genTime3on", "genTime4on",
+                "genTime5on", "genTime6on",
+                "mondayOn", "tuesdayOn", "wednesdayOn", "thursdayOn",
+                "fridayOn", "saturdayOn", "sundayOn",
+            ):
+                payload[api_key] = value
+            else:
+                # peakAndVallery, energyMode, solarSell, gridCharge use "1"/"0"
+                payload[api_key] = "1" if value else "0"
+        elif isinstance(value, (int, float)):
+            payload[api_key] = str(int(value)) if value == int(value) else str(value)
+        else:
+            payload[api_key] = str(value)
+
+        # Work mode mapping: our names → Sunsynk numeric codes
+        if api_key == "sysWorkMode":
+            mode_map = {
+                "self_use": "1",
+                "time_of_use": "2",
+                "backup": "3",
+                "peak_shaving": "4",
+            }
+            payload[api_key] = mode_map.get(str(value), str(value))
+
+        headers = self._bearer_headers()
+        headers["Content-Type"] = "application/json"
+
+        body = json.dumps(payload)
+
+        _LOGGER.debug(
+            "Writing setting to %s: %s", url, payload
+        )
+
+        async with session.post(url, headers=headers, data=body) as resp:
+            if resp.status == 401:
+                raise SunsynkAuthError("Token expired during write")
+            if resp.status != 200:
+                resp_text = await resp.text()
+                raise SunsynkCommunicationError(
+                    f"Write failed: HTTP {resp.status} — {resp_text[:200]}"
+                )
+            data = await resp.json()
+            if not data.get("success", False):
+                raise SunsynkCommunicationError(
+                    f"Write rejected by API: {data.get('msg', 'Unknown error')}"
+                )
+
+        _LOGGER.info(
+            "Successfully wrote %s=%s to inverter %s",
+            api_key, payload[api_key], sn
         )
 
     async def close(self) -> None:

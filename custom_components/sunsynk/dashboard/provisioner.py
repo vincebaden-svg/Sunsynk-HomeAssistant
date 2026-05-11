@@ -2,8 +2,10 @@
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import json as json_helper
 
 from .layout import get_dashboard_config
 
@@ -11,6 +13,7 @@ _LOGGER = logging.getLogger(__name__)
 
 DASHBOARD_URL_PATH = "sunsynk"
 DASHBOARD_TITLE = "Sunsynk Solar"
+DASHBOARD_FILENAME = ".storage/lovelace.sunsynk"
 
 
 async def async_provision_dashboard(
@@ -19,64 +22,54 @@ async def async_provision_dashboard(
 ) -> None:
     """Create the Sunsynk Lovelace dashboard if it doesn't already exist.
 
-    This function is idempotent — calling it multiple times is safe.
+    This writes a storage-mode dashboard config file directly, which is the
+    most reliable approach across HA versions. The dashboard appears in the
+    sidebar after a restart or lovelace reload.
     """
     try:
-        # Check if dashboard already exists
-        dashboards = await _get_existing_dashboards(hass)
+        # Check if dashboard storage file already exists
+        storage_path = Path(hass.config.path(DASHBOARD_FILENAME))
+        if storage_path.exists():
+            _LOGGER.debug(
+                "Sunsynk dashboard storage already exists, skipping provisioning"
+            )
+            return
 
-        for dashboard in dashboards:
-            if dashboard.get("url_path") == DASHBOARD_URL_PATH:
-                _LOGGER.debug(
-                    "Sunsynk dashboard already exists at /%s, skipping provisioning",
-                    DASHBOARD_URL_PATH,
-                )
-                return
+        # Try the programmatic approach first (HA 2024.1+)
+        if await _try_programmatic_provision(hass, inverter_sn):
+            return
 
-        # Create the dashboard
-        await _create_dashboard(hass, inverter_sn)
-        _LOGGER.info("Sunsynk dashboard provisioned at /%s", DASHBOARD_URL_PATH)
+        # Fallback: write the storage file directly
+        await _write_dashboard_storage(hass, inverter_sn)
 
     except Exception as err:  # noqa: BLE001
         _LOGGER.warning(
             "Failed to provision Sunsynk dashboard: %s. "
-            "You can create it manually using the layout in dashboard/layout.py",
+            "You can create it manually in the HA UI.",
             err,
         )
 
 
-async def _get_existing_dashboards(hass: HomeAssistant) -> list[dict]:
-    """Get list of existing Lovelace dashboards."""
+async def _try_programmatic_provision(
+    hass: HomeAssistant, inverter_sn: str
+) -> bool:
+    """Try to create dashboard via HA's lovelace API."""
     try:
         lovelace = hass.data.get("lovelace")
         if lovelace is None:
-            return []
-
-        # Try to get dashboards via the lovelace storage
-        dashboards_collection = getattr(lovelace, "dashboards", None)
-        if dashboards_collection is None:
-            return []
-
-        return list(dashboards_collection.async_items())
-    except Exception:  # noqa: BLE001
-        return []
-
-
-async def _create_dashboard(hass: HomeAssistant, inverter_sn: str) -> None:
-    """Create the Sunsynk Lovelace dashboard."""
-    config = get_dashboard_config(inverter_sn)
-
-    try:
-        lovelace = hass.data.get("lovelace")
-        if lovelace is None:
-            _LOGGER.warning("Lovelace not available — dashboard not provisioned")
-            return
+            return False
 
         dashboards_collection = getattr(lovelace, "dashboards", None)
         if dashboards_collection is None:
-            _LOGGER.warning("Lovelace dashboards collection not available")
-            return
+            return False
 
+        # Check if already exists
+        for dashboard in dashboards_collection.async_items():
+            if dashboard.get("url_path") == DASHBOARD_URL_PATH:
+                _LOGGER.debug("Sunsynk dashboard already registered")
+                return True
+
+        # Create the dashboard entry
         await dashboards_collection.async_create_item({
             "url_path": DASHBOARD_URL_PATH,
             "title": DASHBOARD_TITLE,
@@ -86,7 +79,35 @@ async def _create_dashboard(hass: HomeAssistant, inverter_sn: str) -> None:
             "mode": "storage",
         })
 
-        _LOGGER.info("Sunsynk dashboard created successfully")
+        # Now write the view config
+        await _write_dashboard_storage(hass, inverter_sn)
+        _LOGGER.info("Sunsynk dashboard provisioned via API")
+        return True
 
     except Exception as err:  # noqa: BLE001
-        _LOGGER.warning("Could not create dashboard via API: %s", err)
+        _LOGGER.debug("Programmatic provisioning failed: %s", err)
+        return False
+
+
+async def _write_dashboard_storage(
+    hass: HomeAssistant, inverter_sn: str
+) -> None:
+    """Write the dashboard config to HA storage."""
+    config = get_dashboard_config(inverter_sn)
+
+    storage_data = {
+        "version": 1,
+        "minor_version": 1,
+        "key": f"lovelace.{DASHBOARD_URL_PATH}",
+        "data": {"config": config},
+    }
+
+    storage_path = Path(hass.config.path(DASHBOARD_FILENAME))
+    storage_path.parent.mkdir(parents=True, exist_ok=True)
+
+    await hass.async_add_executor_job(
+        json_helper.save_json, str(storage_path), storage_data
+    )
+    _LOGGER.info(
+        "Sunsynk dashboard config written to %s", storage_path
+    )

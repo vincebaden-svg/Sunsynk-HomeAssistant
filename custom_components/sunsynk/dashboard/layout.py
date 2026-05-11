@@ -3,85 +3,165 @@ from __future__ import annotations
 
 
 def get_dashboard_config(inverter_sn: str) -> dict:
-    """Return the Lovelace dashboard configuration for the given inverter."""
-    prefix = f"sunsynk"
+    """Return the Lovelace dashboard configuration for the given inverter.
+
+    Uses only built-in HA cards so no HACS dependencies are required.
+    If the user has sunsynk-power-flow-card installed, they can swap in
+    the custom card manually.
+    """
+    prefix = "sunsynk"
 
     return {
         "title": "Sunsynk Solar",
         "views": [
             {
                 "title": "Overview",
-                "path": "sunsynk",
+                "path": "sunsynk-overview",
                 "icon": "mdi:solar-power",
-                "cards": [
-                    # Power flow card (requires sunsynk-power-flow-card from HACS)
+                "type": "sections",
+                "sections": [
                     {
-                        "type": "custom:sunsynk-power-flow-card",
-                        "title": "Power Flow",
-                        "entities": {
-                            "battery": {
-                                "entity": f"sensor.{prefix}_battery_soc",
-                                "power_entity": f"sensor.{prefix}_battery_power",
-                            },
-                            "grid": {
-                                "entity": f"sensor.{prefix}_grid_power",
-                            },
-                            "solar": {
+                        "type": "grid",
+                        "cards": [
+                            # PV Power
+                            {
+                                "type": "tile",
                                 "entity": f"sensor.{prefix}_pv_power",
+                                "name": "Solar",
+                                "icon": "mdi:solar-panel-large",
+                                "color": "amber",
                             },
-                            "load": {
+                            # Battery Power
+                            {
+                                "type": "tile",
+                                "entity": f"sensor.{prefix}_battery_power",
+                                "name": "Battery",
+                                "icon": "mdi:battery-charging",
+                                "color": "green",
+                            },
+                            # Grid Power
+                            {
+                                "type": "tile",
+                                "entity": f"sensor.{prefix}_grid_power",
+                                "name": "Grid",
+                                "icon": "mdi:transmission-tower",
+                                "color": "red",
+                            },
+                            # Load Power
+                            {
+                                "type": "tile",
                                 "entity": f"sensor.{prefix}_load_power",
+                                "name": "Load",
+                                "icon": "mdi:home-lightning-bolt",
+                                "color": "blue",
                             },
-                        },
-                    },
-                    # Battery SOC gauge
-                    {
-                        "type": "gauge",
-                        "entity": f"sensor.{prefix}_battery_soc",
-                        "name": "Battery SOC",
-                        "min": 0,
-                        "max": 100,
-                        "severity": {
-                            "green": 50,
-                            "yellow": 20,
-                            "red": 0,
-                        },
-                    },
-                    # Energy totals
-                    {
-                        "type": "entities",
-                        "title": "Today's Energy",
-                        "entities": [
-                            f"sensor.{prefix}_pv_energy_today",
-                            f"sensor.{prefix}_grid_import_today",
-                            f"sensor.{prefix}_grid_export_today",
-                            f"sensor.{prefix}_load_energy_today",
-                            f"sensor.{prefix}_battery_charge_today",
                         ],
                     },
-                    # Grid & system status
                     {
-                        "type": "entities",
-                        "title": "System Status",
-                        "entities": [
-                            f"binary_sensor.{prefix}_grid_connected",
-                            f"sensor.{prefix}_system_status",
-                            f"sensor.{prefix}_fault_code",
-                            f"sensor.{prefix}_weather_temperature",
-                            f"sensor.{prefix}_weather_description",
-                        ],
-                    },
-                    # Quick action buttons
-                    {
-                        "type": "entities",
-                        "title": "Controls",
-                        "entities": [
-                            f"switch.{prefix}_grid_charge",
-                            f"select.{prefix}_battery_priority",
-                            f"select.{prefix}_work_mode",
+                        "type": "grid",
+                        "cards": [
+                            # Battery SOC gauge
+                            {
+                                "type": "gauge",
+                                "entity": f"sensor.{prefix}_battery_soc",
+                                "name": "Battery",
+                                "unit": "%",
+                                "min": 0,
+                                "max": 100,
+                                "severity": {
+                                    "green": 50,
+                                    "yellow": 20,
+                                    "red": 0,
+                                },
+                                "needle": True,
+                            },
+                            # Grid connected
+                            {
+                                "type": "tile",
+                                "entity": f"binary_sensor.{prefix}_grid_connected",
+                                "name": "Grid Status",
+                                "icon": "mdi:transmission-tower",
+                            },
                         ],
                     },
                 ],
-            }
+            },
+            {
+                "title": "Energy",
+                "path": "sunsynk-energy",
+                "icon": "mdi:lightning-bolt",
+                "cards": [
+                    # Today's energy
+                    {
+                        "type": "entities",
+                        "title": "Today's Energy (kWh)",
+                        "entities": [
+                            {
+                                "entity": f"sensor.{prefix}_pv_energy_today",
+                                "name": "Solar Generated",
+                                "icon": "mdi:solar-power",
+                            },
+                            {
+                                "entity": f"sensor.{prefix}_battery_charge_today",
+                                "name": "Battery Charged",
+                                "icon": "mdi:battery-plus",
+                            },
+                            {
+                                "entity": f"sensor.{prefix}_battery_discharge_today",
+                                "name": "Battery Discharged",
+                                "icon": "mdi:battery-minus",
+                            },
+                            {
+                                "entity": f"sensor.{prefix}_grid_import_today",
+                                "name": "Grid Import",
+                                "icon": "mdi:transmission-tower-import",
+                            },
+                            {
+                                "entity": f"sensor.{prefix}_grid_export_today",
+                                "name": "Grid Export",
+                                "icon": "mdi:transmission-tower-export",
+                            },
+                            {
+                                "entity": f"sensor.{prefix}_load_energy_today",
+                                "name": "Load Consumed",
+                                "icon": "mdi:home-lightning-bolt",
+                            },
+                        ],
+                    },
+                    # History graph
+                    {
+                        "type": "history-graph",
+                        "title": "Power (last 24h)",
+                        "hours_to_show": 24,
+                        "entities": [
+                            {"entity": f"sensor.{prefix}_pv_power", "name": "Solar"},
+                            {"entity": f"sensor.{prefix}_battery_power", "name": "Battery"},
+                            {"entity": f"sensor.{prefix}_grid_power", "name": "Grid"},
+                            {"entity": f"sensor.{prefix}_load_power", "name": "Load"},
+                        ],
+                    },
+                ],
+            },
+            {
+                "title": "Controls",
+                "path": "sunsynk-controls",
+                "icon": "mdi:tune",
+                "cards": [
+                    {
+                        "type": "entities",
+                        "title": "Inverter Controls",
+                        "entities": [
+                            {
+                                "entity": f"select.{prefix}_work_mode",
+                                "name": "Work Mode",
+                            },
+                            {
+                                "entity": f"switch.{prefix}_grid_charge",
+                                "name": "Grid Charge",
+                            },
+                        ],
+                    },
+                ],
+            },
         ],
     }

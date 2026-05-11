@@ -8,6 +8,7 @@ from custom_components.sunsynk.api.official import (
     _compute_md5,
     _compute_hmac_sha256,
     _build_text_to_sign,
+    _build_url_to_sign,
 )
 
 
@@ -25,14 +26,28 @@ def test_compute_hmac_sha256():
     assert len(result) > 0
 
 
-def test_build_text_to_sign_structure():
-    """Test textToSign is built in correct order per api-login.html spec."""
+def test_build_url_to_sign_no_params():
+    """Test URL signing with no query params returns just the path."""
+    assert _build_url_to_sign("/plants") == "/plants"
+    assert _build_url_to_sign("/plants", None) == "/plants"
+    assert _build_url_to_sign("/plants", {}) == "/plants"
+
+
+def test_build_url_to_sign_with_params():
+    """Test URL signing sorts query params alphabetically."""
+    result = _build_url_to_sign("/plants", {"page": "1", "limit": "10", "name": ""})
+    assert result == "/plants?limit=10&name=&page=1"
+
+
+def test_build_text_to_sign_post():
+    """Test textToSign for POST is built in correct order per api-login.html spec."""
     text, sig_headers = _build_text_to_sign(
         method="POST",
         path="/oauth/token",
         body_md5="abc123==",
         app_key="204013305",
         nonce="test-nonce-uuid",
+        content_type="application/json",
     )
     lines = text.split("\n")
     assert lines[0] == "POST"
@@ -46,6 +61,30 @@ def test_build_text_to_sign_structure():
     assert sig_headers == "x-ca-key,x-ca-nonce"
 
 
+def test_build_text_to_sign_get():
+    """Test textToSign for GET has empty content-type and MD5."""
+    text, sig_headers = _build_text_to_sign(
+        method="GET",
+        path="/plants",
+        body_md5="",
+        app_key="204013305",
+        nonce="test-nonce-uuid",
+        content_type="",
+        query_params={"page": "1", "limit": "10"},
+    )
+    lines = text.split("\n")
+    assert lines[0] == "GET"
+    assert lines[1] == "application/json"   # accept
+    assert lines[2] == ""                   # Content-MD5 (empty for GET)
+    assert lines[3] == ""                   # content-type (empty for GET)
+    assert lines[4] == ""                   # empty line
+    assert "x-ca-key:204013305" in lines
+    assert "x-ca-nonce:test-nonce-uuid" in lines
+    # URL should have sorted query params
+    assert lines[-1] == "/plants?limit=10&page=1"
+    assert sig_headers == "x-ca-key,x-ca-nonce"
+
+
 def test_client_initialization():
     """Test client initializes correctly."""
     client = OfficialApiClient(
@@ -55,3 +94,4 @@ def test_client_initialization():
     )
     assert client._app_key == "204013305"
     assert client._access_token is None
+    assert client._use_hybrid is None

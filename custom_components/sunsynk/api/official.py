@@ -1,4 +1,11 @@
-"""Official Sunsynk OpenAPI client using HMAC-SHA256 signing."""
+"""Official Sunsynk OpenAPI client with dual-strategy data fetching.
+
+Strategy 1 (hybrid): Official HMAC auth + unofficial API data endpoints with Bearer.
+Strategy 2 (pure official): HMAC-signed GET requests to openapi.sunsynk.net.
+
+The client tries the hybrid approach first. If the unofficial data endpoints reject
+the official token (401), it falls back to HMAC-signed GET requests on the official API.
+"""
 from __future__ import annotations
 
 import base64
@@ -6,23 +13,28 @@ import hashlib
 import hmac
 import json
 import logging
+from datetime import date, datetime, timedelta
 from typing import Any
 import uuid
 
 import aiohttp
 
 from .base import SunsynkApiClient, SunsynkData
-from .exceptions import SunsynkAuthError, SunsynkCommunicationError
+from .exceptions import SunsynkAuthError, SunsynkCommunicationError, SunsynkDataError
 
 _LOGGER = logging.getLogger(__name__)
 
 OFFICIAL_API_BASE = "https://openapi.sunsynk.net"
+UNOFFICIAL_API_BASE = "https://api.sunsynk.net"
+
+TOKEN_LIFETIME = timedelta(days=6)
+TOKEN_REFRESH_THRESHOLD = TOKEN_LIFETIME * 0.8
 
 
 def _compute_md5(data: str) -> str:
     """Compute base64-encoded MD5 of a string."""
-    md5 = hashlib.md5(data.encode()).digest()
-    return base64.b64encode(md5).decode()
+    md5_hash = hashlib.md5(data.encode()).digest()
+    return base64.b64encode(md5_hash).decode()
 
 
 def _compute_hmac_sha256(text: str, secret: str) -> str:
@@ -31,14 +43,31 @@ def _compute_hmac_sha256(text: str, secret: str) -> str:
     return base64.b64encode(sig).decode()
 
 
+def _build_url_to_sign(path: str, query_params: dict[str, str] | None = None) -> str:
+    """Build the URL portion of textToSign with sorted query parameters.
+
+    Per api-login.html urlToSign(): query params are sorted by key and appended.
+    """
+    if not query_params:
+        return path
+    sorted_params = sorted(query_params.items())
+    qs = "&".join(f"{k}={v}" for k, v in sorted_params)
+    return f"{path}?{qs}"
+
+
 def _build_text_to_sign(
     method: str,
     path: str,
     body_md5: str,
     app_key: str,
     nonce: str,
+    content_type: str = "application/json",
+    query_params: dict[str, str] | None = None,
 ) -> tuple[str, str]:
     """Build the textToSign string and signatureHeaders per Sunsynk OpenAPI spec.
+
+    For POST: content_type = "application/json", body_md5 = base64(md5(body))
+    For GET:  content_type = "" (no body), body_md5 = "" (no body)
 
     Returns:
         Tuple of (textToSign, signatureHeaders)
@@ -51,27 +80,33 @@ def _build_text_to_sign(
     sorted_keys = sorted(headers_to_sign.keys())
     signature_headers = ",".join(sorted_keys)
 
-    # Build textToSign in exact order per api-login.html
+    # Build the URL portion with sorted query params
+    url_to_sign = _build_url_to_sign(path, query_params)
+
+    # Build textToSign in exact order per api-login.html reference
     lines = [
         method.upper(),
-        "application/json",   # accept
-        body_md5,             # Content-MD5
-        "application/json",   # content-type
+        "application/json",   # accept (always present)
+        body_md5,             # Content-MD5 (empty string for GET)
+        content_type,         # content-type (empty string for GET)
         "",                   # empty line (Date header placeholder)
     ]
     for key in sorted_keys:
         lines.append(f"{key}:{headers_to_sign[key]}")
-    lines.append(path)
+    lines.append(url_to_sign)
 
     text_to_sign = "\n".join(lines)
     return text_to_sign, signature_headers
 
 
 class OfficialApiClient(SunsynkApiClient):
-    """API client using the official Sunsynk OpenAPI with HMAC-SHA256 signing.
+    """Dual-strategy API client for Sunsynk.
 
-    SECURITY NOTE: ssl=False is required due to certificate issues on openapi.sunsynk.net.
-    Users are warned about this during config flow setup.
+    Strategy 1 (hybrid): HMAC auth on official API + Bearer data on unofficial API.
+    Strategy 2 (pure): HMAC-signed requests for everything on official API.
+
+    On first data fetch, tries hybrid. If unofficial rejects the token, switches
+    to pure official with HMAC-signed GET requests.
     """
 
     def __init__(
@@ -82,38 +117,50 @@ class OfficialApiClient(SunsynkApiClient):
         username: str = "",
         password: str = "",
     ) -> None:
-        """Initialize the official API client."""
+        """Initialize the API client."""
         self._app_key = app_key
         self._app_secret = app_secret
         self._inverter_sn = inverter_sn
         self._username = username
         self._password = password
         self._access_token: str | None = None
+        self._authenticated_at: datetime | None = None
         self._session: aiohttp.ClientSession | None = None
+        self._plant_id: str | None = None
+        # Strategy selection: None = not yet determined, True = hybrid, False = pure
+        self._use_hybrid: bool | None = None
 
     def _get_session(self) -> aiohttp.ClientSession:
-        """Get or create an aiohttp session with SSL verification disabled."""
+        """Get or create a standard HTTPS session."""
         if self._session is None or self._session.closed:
-            # ssl=False required — openapi.sunsynk.net has certificate issues
-            connector = aiohttp.TCPConnector(ssl=False)
-            self._session = aiohttp.ClientSession(connector=connector)
+            self._session = aiohttp.ClientSession()
         return self._session
 
-    def _build_signed_headers(
-        self, method: str, path: str, body: str
-    ) -> dict[str, str]:
-        """Build HMAC-SHA256 signed request headers."""
+    def _should_refresh_token(self) -> bool:
+        """Check if token should be proactively refreshed."""
+        if self._authenticated_at is None:
+            return True
+        age = datetime.now() - self._authenticated_at
+        return age >= TOKEN_REFRESH_THRESHOLD
+
+    def _build_signed_headers_post(self, path: str, body: str) -> dict[str, str]:
+        """Build HMAC-SHA256 signed headers for a POST request (auth)."""
         nonce = str(uuid.uuid4())
         body_md5 = _compute_md5(body) if body else ""
 
         text_to_sign, signature_headers = _build_text_to_sign(
-            method, path, body_md5, self._app_key, nonce
+            method="POST",
+            path=path,
+            body_md5=body_md5,
+            app_key=self._app_key,
+            nonce=nonce,
+            content_type="application/json",
         )
         signature = _compute_hmac_sha256(text_to_sign, self._app_secret)
 
         return {
-            "content-type": "application/json",
-            "accept": "application/json",
+            "Content-Type": "application/json",
+            "Accept": "application/json",
             "Content-MD5": body_md5,
             "X-Ca-Key": self._app_key,
             "X-Ca-Nonce": nonce,
@@ -121,8 +168,51 @@ class OfficialApiClient(SunsynkApiClient):
             "X-Ca-Signature-Headers": signature_headers,
         }
 
+    def _build_signed_headers_get(
+        self, path: str, query_params: dict[str, str] | None = None
+    ) -> dict[str, str]:
+        """Build HMAC-SHA256 signed headers for a GET request (data).
+
+        Key differences from POST signing:
+        - No body → Content-MD5 is empty string
+        - No body → content-type line is empty string in textToSign
+        - Query params are sorted and included in the URL portion of the signature
+        - Bearer token is included alongside HMAC headers
+        """
+        nonce = str(uuid.uuid4())
+
+        text_to_sign, signature_headers = _build_text_to_sign(
+            method="GET",
+            path=path,
+            body_md5="",
+            app_key=self._app_key,
+            nonce=nonce,
+            content_type="",  # No content-type for GET (no body)
+            query_params=query_params,
+        )
+        signature = _compute_hmac_sha256(text_to_sign, self._app_secret)
+
+        headers = {
+            "Accept": "application/json",
+            "X-Ca-Key": self._app_key,
+            "X-Ca-Nonce": nonce,
+            "X-Ca-Signature": signature,
+            "X-Ca-Signature-Headers": signature_headers,
+        }
+        # Include Bearer token if we have one (some endpoints may need both)
+        if self._access_token:
+            headers["Authorization"] = f"Bearer {self._access_token}"
+        return headers
+
+    def _bearer_headers(self) -> dict[str, str]:
+        """Return Bearer token headers for unofficial API data requests."""
+        return {
+            "Authorization": f"Bearer {self._access_token}",
+            "Accept": "application/json",
+        }
+
     async def authenticate(self) -> None:
-        """Authenticate using username/password with HMAC-SHA256 signed headers."""
+        """Authenticate via official API using HMAC-SHA256 signed POST."""
         path = "/oauth/token"
         body_data = {
             "username": self._username,
@@ -130,9 +220,8 @@ class OfficialApiClient(SunsynkApiClient):
             "grant_type": "password",
             "client_id": "openapi",
         }
-        # Use separators without spaces and sort_keys for consistent MD5
         body = json.dumps(body_data, separators=(",", ":"), sort_keys=False)
-        headers = self._build_signed_headers("POST", path, body)
+        headers = self._build_signed_headers_post(path, body)
 
         session = self._get_session()
         try:
@@ -152,9 +241,8 @@ class OfficialApiClient(SunsynkApiClient):
                 if resp.status == 404:
                     raise SunsynkCommunicationError(
                         f"Official API endpoint not found (404): {resp.url}. "
-                        "Check that openapi.sunsynk.net is accessible and the endpoint path is correct."
+                        "Check that openapi.sunsynk.net is accessible."
                     )
-                resp.raise_for_status()
                 resp.raise_for_status()
                 data = await resp.json()
 
@@ -168,6 +256,7 @@ class OfficialApiClient(SunsynkApiClient):
                 if not self._access_token:
                     raise SunsynkAuthError("No access token in official API response")
 
+                self._authenticated_at = datetime.now()
                 _LOGGER.debug("Official API authentication successful")
 
         except SunsynkAuthError:
@@ -177,32 +266,459 @@ class OfficialApiClient(SunsynkApiClient):
                 f"Network error during official API auth: {err}"
             ) from err
 
-    async def fetch_all(self) -> SunsynkData:
-        """Fetch inverter data from the official API.
-
-        NOTE: Official API endpoint paths require spike task verification.
-        This implementation uses the same endpoint structure as the unofficial API
-        as a starting point — update once official endpoints are confirmed.
-        """
-        if not self._access_token:
+    async def _ensure_authenticated(self) -> None:
+        """Ensure we have a valid token, refreshing if needed."""
+        if not self._access_token or self._should_refresh_token():
+            _LOGGER.debug("Token missing or stale, re-authenticating")
             await self.authenticate()
 
-        # TODO: Replace with verified official API endpoints after spike task
-        # For now, return minimal data to satisfy the interface
-        _LOGGER.warning(
-            "Official API data endpoints not yet verified — spike task required. "
-            "Returning empty SunsynkData."
+    # ─── Hybrid strategy: unofficial data endpoints with Bearer token ───
+
+    async def _hybrid_get_plant_id(self) -> str:
+        """Get plant ID via unofficial API (hybrid strategy).
+
+        Returns empty string if the unofficial API rejects the token (401).
+        """
+        session = self._get_session()
+        url = f"{UNOFFICIAL_API_BASE}/api/v1/plants?page=1&limit=10&name=&status="
+
+        async with session.get(url, headers=self._bearer_headers()) as resp:
+            if resp.status == 401:
+                return ""  # Signal that hybrid doesn't work
+            resp.raise_for_status()
+            data = await resp.json()
+
+        plants = data.get("data", {}).get("infos", [])
+        if not plants:
+            raise SunsynkDataError(
+                "No plants found on account. Check your Sunsynk credentials "
+                "and ensure your inverter is registered."
+            )
+        return str(plants[0]["id"])
+
+    async def _hybrid_fetch_all(self, plant_id: str) -> SunsynkData:
+        """Fetch data via unofficial API endpoints with Bearer token.
+
+        Calls multiple endpoints to populate all SunsynkData fields:
+        - /plant/energy/{id}/flow — real-time power flow
+        - /inverter/{sn}/realtime/input — PV input per string
+        - /inverter/battery/{sn}/realtime — battery details
+        - /inverter/grid/{sn}/realtime — grid details
+        - /inverter/load/{sn}/realtime — load details
+        """
+        session = self._get_session()
+        sn = self._inverter_sn
+        headers = self._bearer_headers()
+        today = date.today().isoformat()
+
+        # Helper to GET with error handling
+        async def _get_json(url: str) -> dict:
+            async with session.get(url, headers=headers) as resp:
+                if resp.status == 401:
+                    raise SunsynkAuthError("Token expired during data fetch")
+                resp.raise_for_status()
+                result = await resp.json()
+                return result.get("data", {}) if result.get("success", True) else {}
+
+        # 1. Power flow (plant-level)
+        flow_data = await _get_json(
+            f"{UNOFFICIAL_API_BASE}/api/v1/plant/energy/{plant_id}/flow"
+            f"?date={today}"
         )
-        return SunsynkData(inverter_sn=self._inverter_sn)
+
+        # 2. Battery realtime (inverter-level)
+        battery_data = await _get_json(
+            f"{UNOFFICIAL_API_BASE}/api/v1/inverter/battery/{sn}/realtime"
+            f"?sn={sn}&lan=en"
+        )
+
+        # 3. Grid realtime (inverter-level)
+        grid_data = await _get_json(
+            f"{UNOFFICIAL_API_BASE}/api/v1/inverter/grid/{sn}/realtime"
+            f"?sn={sn}"
+        )
+
+        # 4. Load realtime (inverter-level)
+        load_data = await _get_json(
+            f"{UNOFFICIAL_API_BASE}/api/v1/inverter/load/{sn}/realtime"
+            f"?sn={sn}"
+        )
+
+        # 5. PV input (inverter-level)
+        input_data = await _get_json(
+            f"{UNOFFICIAL_API_BASE}/api/v1/inverter/{sn}/realtime/input"
+        )
+
+        return self._build_sunsynk_data(
+            flow_data, battery_data, grid_data, load_data, input_data
+        )
+
+    # ─── Pure official strategy: HMAC-signed GET requests ───
+
+    async def _official_get(
+        self, path: str, query_params: dict[str, str] | None = None
+    ) -> dict:
+        """Make an HMAC-signed GET request to the official API.
+
+        Tries multiple signing variations if the first attempt returns 400,
+        since the exact GET signing format is undocumented.
+        """
+        session = self._get_session()
+
+        # Build full URL with sorted query params
+        if query_params:
+            sorted_params = sorted(query_params.items())
+            qs = "&".join(f"{k}={v}" for k, v in sorted_params)
+            url = f"{OFFICIAL_API_BASE}{path}?{qs}"
+        else:
+            url = f"{OFFICIAL_API_BASE}{path}"
+
+        # Attempt 1: GET signing with empty content-type (most likely correct)
+        headers = self._build_signed_headers_get(path, query_params)
+        async with session.get(url, headers=headers) as resp:
+            _LOGGER.debug("Official GET %s: status=%s", path, resp.status)
+            if resp.status == 200:
+                return await resp.json()
+            if resp.status == 401:
+                raise SunsynkAuthError(
+                    f"Official API GET {path} returned 401 — token or signing invalid"
+                )
+            first_status = resp.status
+            first_body = await resp.text()
+
+        # Attempt 2: Try with content-type = "application/json" in signature
+        # (some API gateways expect content-type even on GET)
+        _LOGGER.debug(
+            "Official GET %s returned %s, retrying with content-type in signature",
+            path, first_status
+        )
+        nonce = str(uuid.uuid4())
+        text_to_sign, signature_headers = _build_text_to_sign(
+            method="GET",
+            path=path,
+            body_md5="",
+            app_key=self._app_key,
+            nonce=nonce,
+            content_type="application/json",  # Include content-type this time
+            query_params=query_params,
+        )
+        signature = _compute_hmac_sha256(text_to_sign, self._app_secret)
+        headers_v2 = {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "X-Ca-Key": self._app_key,
+            "X-Ca-Nonce": nonce,
+            "X-Ca-Signature": signature,
+            "X-Ca-Signature-Headers": signature_headers,
+        }
+        if self._access_token:
+            headers_v2["Authorization"] = f"Bearer {self._access_token}"
+
+        async with session.get(url, headers=headers_v2) as resp:
+            _LOGGER.debug("Official GET %s (v2): status=%s", path, resp.status)
+            if resp.status == 200:
+                return await resp.json()
+            if resp.status == 401:
+                raise SunsynkAuthError(
+                    f"Official API GET {path} returned 401"
+                )
+            second_status = resp.status
+            second_body = await resp.text()
+
+        # Both attempts failed
+        raise SunsynkCommunicationError(
+            f"Official API GET {path} failed with both signing variants. "
+            f"Attempt 1: HTTP {first_status} ({first_body[:100]}). "
+            f"Attempt 2: HTTP {second_status} ({second_body[:100]}). "
+            "The GET signing format may need further investigation."
+        )
+
+    async def _official_get_plant_id(self) -> str:
+        """Get plant ID via official API with HMAC-signed GET."""
+        # Try /plants (the path that returned 401, meaning it exists)
+        query_params = {"page": "1", "limit": "10"}
+        data = await self._official_get("/plants", query_params)
+
+        if not data.get("success", True):
+            raise SunsynkDataError(
+                f"Official API /plants error: {data.get('msg', 'Unknown')}"
+            )
+
+        # Response structure may differ from unofficial API — try common shapes
+        plants_data = data.get("data", {})
+        if isinstance(plants_data, dict):
+            plants = plants_data.get("infos", []) or plants_data.get("plants", [])
+        elif isinstance(plants_data, list):
+            plants = plants_data
+        else:
+            plants = []
+
+        if not plants:
+            raise SunsynkDataError(
+                "No plants found via official API. Check your credentials "
+                "and ensure your inverter is registered."
+            )
+
+        # Extract ID — try common field names
+        plant = plants[0]
+        plant_id = plant.get("id") or plant.get("plantId") or plant.get("plant_id")
+        if not plant_id:
+            raise SunsynkDataError(
+                f"Could not extract plant ID from response: {plant}"
+            )
+
+        return str(plant_id)
+
+    async def _official_fetch_all(self, plant_id: str) -> SunsynkData:
+        """Fetch data via official API with HMAC-signed GET requests."""
+        today = date.today().isoformat()
+        sn = self._inverter_sn
+
+        # Try power flow endpoint — official API may use different path prefixes
+        flow_data: dict = {}
+        for flow_path in [
+            f"/plant/energy/{plant_id}/flow",
+            f"/plant/{plant_id}/flow",
+            f"/plants/{plant_id}/flow",
+        ]:
+            try:
+                resp_data = await self._official_get(flow_path, {"date": today})
+                flow_data = resp_data.get("data", {})
+                _LOGGER.debug("Official flow endpoint found: %s", flow_path)
+                break
+            except SunsynkCommunicationError:
+                continue
+            except SunsynkAuthError:
+                raise
+
+        # Try battery endpoint
+        battery_data: dict = {}
+        for batt_path in [
+            f"/inverter/battery/{sn}/realtime",
+        ]:
+            try:
+                resp_data = await self._official_get(
+                    batt_path, {"sn": sn, "lan": "en"}
+                )
+                battery_data = resp_data.get("data", {})
+                break
+            except SunsynkCommunicationError:
+                continue
+            except SunsynkAuthError:
+                raise
+
+        # Try grid endpoint
+        grid_data: dict = {}
+        for grid_path in [
+            f"/inverter/grid/{sn}/realtime",
+        ]:
+            try:
+                resp_data = await self._official_get(grid_path, {"sn": sn})
+                grid_data = resp_data.get("data", {})
+                break
+            except SunsynkCommunicationError:
+                continue
+            except SunsynkAuthError:
+                raise
+
+        # Try load endpoint
+        load_data: dict = {}
+        for load_path in [
+            f"/inverter/load/{sn}/realtime",
+        ]:
+            try:
+                resp_data = await self._official_get(load_path, {"sn": sn})
+                load_data = resp_data.get("data", {})
+                break
+            except SunsynkCommunicationError:
+                continue
+            except SunsynkAuthError:
+                raise
+
+        # Try input endpoint
+        input_data: dict = {}
+        for input_path in [
+            f"/inverter/{sn}/realtime/input",
+        ]:
+            try:
+                resp_data = await self._official_get(input_path)
+                input_data = resp_data.get("data", {})
+                break
+            except SunsynkCommunicationError:
+                continue
+            except SunsynkAuthError:
+                raise
+
+        if not any([flow_data, battery_data, grid_data, load_data, input_data]):
+            _LOGGER.warning(
+                "No data retrieved from official API endpoints. "
+                "Returning partial SunsynkData."
+            )
+
+        return self._build_sunsynk_data(
+            flow_data, battery_data, grid_data, load_data, input_data
+        )
+
+    # ─── Common helpers ───
+
+    def _build_sunsynk_data(
+        self,
+        flow_data: dict,
+        battery_data: dict,
+        grid_data: dict,
+        load_data: dict,
+        input_data: dict,
+    ) -> SunsynkData:
+        """Build SunsynkData from multiple endpoint responses.
+
+        Args:
+            flow_data: /plant/energy/{id}/flow response
+            battery_data: /inverter/battery/{sn}/realtime response
+            grid_data: /inverter/grid/{sn}/realtime response
+            load_data: /inverter/load/{sn}/realtime response
+            input_data: /inverter/{sn}/realtime/input response
+        """
+
+        def _float(val: Any, default: float = 0.0) -> float:
+            """Safely convert to float."""
+            try:
+                return float(val) if val is not None else default
+            except (ValueError, TypeError):
+                return default
+
+        # PV power — from flow (plant total) or input (inverter pac)
+        pv_power = _float(flow_data.get("pvPower")) or _float(input_data.get("pac"))
+
+        # Battery — prefer inverter-level data, fall back to flow
+        battery_power = _float(battery_data.get("power")) or _float(
+            flow_data.get("battPower")
+        )
+        battery_soc = _float(battery_data.get("soc")) or _float(
+            flow_data.get("soc")
+        )
+
+        # Grid — prefer inverter-level
+        grid_power = _float(grid_data.get("pac")) or _float(
+            flow_data.get("gridOrMeterPower")
+        )
+
+        # Load — prefer inverter-level
+        load_power = _float(load_data.get("totalPower")) or _float(
+            flow_data.get("loadOrEpsPower")
+        )
+
+        # Grid connected — check grid frequency (< 40Hz = disconnected)
+        grid_fac = _float(grid_data.get("fac"))
+        if grid_fac > 0:
+            grid_connected = grid_fac >= 40.0
+        else:
+            # Fall back to flow data flags
+            grid_connected = (
+                not bool(flow_data.get("existsGen", False))
+                and bool(flow_data.get("gridTo", True))
+            )
+
+        # Energy today — from inverter-level endpoints
+        pv_energy_today = _float(input_data.get("etoday"))
+        battery_charge_today = _float(battery_data.get("etodayChg"))
+        battery_discharge_today = _float(battery_data.get("etodayDischg"))
+        grid_import_today = _float(grid_data.get("etodayFrom"))
+        grid_export_today = _float(grid_data.get("etodayTo"))
+        load_energy_today = _float(load_data.get("dailyUsed"))
+
+        # System status from grid data
+        grid_status = grid_data.get("status")
+        system_status = (
+            f"grid_status={grid_status}" if grid_status is not None else None
+        )
+
+        return SunsynkData(
+            pv_power=pv_power,
+            battery_power=battery_power,
+            battery_soc=battery_soc,
+            grid_power=grid_power,
+            load_power=load_power,
+            grid_connected=grid_connected,
+            pv_energy_today=pv_energy_today,
+            battery_charge_today=battery_charge_today,
+            battery_discharge_today=battery_discharge_today,
+            grid_import_today=grid_import_today,
+            grid_export_today=grid_export_today,
+            load_energy_today=load_energy_today,
+            system_status=system_status,
+            inverter_sn=self._inverter_sn,
+        )
+
+    # ─── Public interface ───
+
+    async def _get_plant_id(self) -> str:
+        """Get plant ID using the active strategy."""
+        if self._plant_id:
+            return self._plant_id
+
+        if self._use_hybrid:
+            self._plant_id = await self._hybrid_get_plant_id()
+        else:
+            self._plant_id = await self._official_get_plant_id()
+
+        return self._plant_id
+
+    async def fetch_all(self) -> SunsynkData:
+        """Fetch inverter data using the best available strategy.
+
+        First call determines strategy:
+        1. Try hybrid (unofficial data endpoints with Bearer token)
+        2. If rejected (401), fall back to pure official (HMAC-signed GET)
+        """
+        await self._ensure_authenticated()
+
+        try:
+            # Determine strategy on first call
+            if self._use_hybrid is None:
+                _LOGGER.debug("Determining data fetch strategy...")
+                plant_id = await self._hybrid_get_plant_id()
+                if plant_id:
+                    self._use_hybrid = True
+                    self._plant_id = plant_id
+                    _LOGGER.info(
+                        "Hybrid strategy active: official auth + unofficial data"
+                    )
+                else:
+                    self._use_hybrid = False
+                    _LOGGER.info(
+                        "Hybrid rejected (401), using pure official API with "
+                        "HMAC-signed GET requests"
+                    )
+                    self._plant_id = await self._official_get_plant_id()
+
+            plant_id = await self._get_plant_id()
+
+            if self._use_hybrid:
+                return await self._hybrid_fetch_all(plant_id)
+            else:
+                return await self._official_fetch_all(plant_id)
+
+        except SunsynkAuthError:
+            raise
+        except SunsynkDataError:
+            raise
+        except aiohttp.ClientError as err:
+            raise SunsynkCommunicationError(
+                f"Network error fetching data: {err}"
+            ) from err
+        except Exception as err:  # noqa: BLE001
+            error_str = str(err).lower()
+            if "401" in error_str or "unauthorized" in error_str:
+                raise SunsynkAuthError("Session expired") from err
+            raise SunsynkCommunicationError(
+                f"Failed to fetch data: {err}"
+            ) from err
 
     async def write_setting(self, key: str, value: Any) -> None:
-        """Write a setting via the official API."""
-        if not self._access_token:
-            await self.authenticate()
-
-        # Full implementation in Epic 5 after endpoint verification
+        """Write a setting (not yet implemented)."""
+        await self._ensure_authenticated()
         raise NotImplementedError(
-            f"Official API write for {key} not yet implemented — spike task required"
+            f"Official API write for {key} not yet implemented"
         )
 
     async def close(self) -> None:

@@ -734,23 +734,16 @@ class OfficialApiClient(SunsynkApiClient):
         # Map high-level keys to Sunsynk API field names
         key_mapping = {
             "work_mode": "sysWorkMode",
-            # "battery_priority": DISABLED — battMode controls battery TYPE not priority.
-            # Sending wrong values disables battery detection. Needs investigation.
+            "battery_priority": "energyMode",
             "grid_charge": "gridCharge",
             "solar_sell": "solarSell",
         }
         api_key = key_mapping.get(key, key)
 
-        # Block writes for unmapped keys that could be dangerous
+        # Value mapping for battery_priority
         if key == "battery_priority":
-            _LOGGER.error(
-                "battery_priority write BLOCKED — battMode field controls battery "
-                "type, not priority. Sending wrong values disables battery detection."
-            )
-            raise SunsynkCommunicationError(
-                "battery_priority write is disabled — the correct API field "
-                "for priority has not been confirmed yet."
-            )
+            priority_map = {"battery": "0", "load": "1"}
+            value = priority_map.get(str(value), str(value))
 
         # Convert values to the format the API expects
         if isinstance(value, bool):

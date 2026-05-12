@@ -92,9 +92,10 @@ async def _try_programmatic_provision(
 async def _write_dashboard_storage(
     hass: HomeAssistant, inverter_sn: str
 ) -> None:
-    """Write the dashboard config to HA storage."""
+    """Write the dashboard config and registration to HA storage."""
     config = get_dashboard_config(inverter_sn)
 
+    # Write the dashboard view config
     storage_data = {
         "version": 1,
         "minor_version": 1,
@@ -108,6 +109,38 @@ async def _write_dashboard_storage(
     await hass.async_add_executor_job(
         json_helper.save_json, str(storage_path), storage_data
     )
+
+    # Also register the dashboard in lovelace_dashboards so it appears in sidebar
+    dashboards_path = Path(hass.config.path(".storage/lovelace_dashboards"))
+    if dashboards_path.exists():
+        existing = await hass.async_add_executor_job(
+            json_helper.load_json, str(dashboards_path)
+        )
+    else:
+        existing = {"version": 1, "minor_version": 1, "key": "lovelace_dashboards", "data": {"items": []}}
+
+    # Check if already registered
+    items = existing.get("data", {}).get("items", [])
+    for item in items:
+        if item.get("url_path") == DASHBOARD_URL_PATH:
+            _LOGGER.debug("Dashboard already registered in lovelace_dashboards")
+            return
+
+    # Add our dashboard
+    items.append({
+        "id": DASHBOARD_URL_PATH,
+        "url_path": DASHBOARD_URL_PATH,
+        "title": DASHBOARD_TITLE,
+        "icon": "mdi:solar-power",
+        "show_in_sidebar": True,
+        "require_admin": False,
+        "mode": "storage",
+    })
+    existing.setdefault("data", {})["items"] = items
+
+    await hass.async_add_executor_job(
+        json_helper.save_json, str(dashboards_path), existing
+    )
     _LOGGER.info(
-        "Sunsynk dashboard config written to %s", storage_path
+        "Sunsynk dashboard registered and config written. Restart HA to see it in sidebar."
     )

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 
@@ -53,7 +53,7 @@ class SunsynkData:
 
     # Metadata
     inverter_sn: str = ""
-    last_updated: datetime = field(default_factory=datetime.now)
+    last_updated: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
     # Inverter settings (read from /api/v1/common/setting/{sn}/read)
     settings: dict = field(default_factory=dict)

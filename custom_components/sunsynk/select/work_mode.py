@@ -28,10 +28,17 @@ class SunsynkWorkModeSelect(CoordinatorEntity[SunsynkCoordinator], SelectEntity)
 
     @property
     def current_option(self) -> str | None:
-        """Return the current work mode."""
+        """Return the current work mode from API settings."""
         if self._optimistic_option is not None:
             return self._optimistic_option
-        return None
+        if self.coordinator.data is None:
+            return None
+        sys_work_mode = self.coordinator.data.settings.get("sysWorkMode")
+        if sys_work_mode is None:
+            return None
+        # sysWorkMode: 1=self_use, 2=time_of_use, 3=backup, 4=peak_shaving
+        mode_map = {"1": "self_use", "2": "time_of_use", "3": "backup", "4": "peak_shaving"}
+        return mode_map.get(str(sys_work_mode), str(sys_work_mode))
 
     async def async_select_option(self, option: str) -> None:
         """Change the work mode."""

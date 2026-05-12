@@ -349,8 +349,13 @@ class OfficialApiClient(SunsynkApiClient):
             f"{UNOFFICIAL_API_BASE}/api/v1/inverter/{sn}/realtime/input"
         )
 
+        # 6. Inverter settings (for writable entity state display)
+        settings_data = await _get_json(
+            f"{UNOFFICIAL_API_BASE}/api/v1/common/setting/{sn}/read"
+        )
+
         return self._build_sunsynk_data(
-            flow_data, battery_data, grid_data, load_data, input_data
+            flow_data, battery_data, grid_data, load_data, input_data, settings_data
         )
 
     # ─── Pure official strategy: HMAC-signed GET requests ───
@@ -556,7 +561,7 @@ class OfficialApiClient(SunsynkApiClient):
             )
 
         return self._build_sunsynk_data(
-            flow_data, battery_data, grid_data, load_data, input_data
+            flow_data, battery_data, grid_data, load_data, input_data, {}
         )
 
     # ─── Common helpers ───
@@ -568,6 +573,7 @@ class OfficialApiClient(SunsynkApiClient):
         grid_data: dict,
         load_data: dict,
         input_data: dict,
+        settings_data: dict | None = None,
     ) -> SunsynkData:
         """Build SunsynkData from multiple endpoint responses.
 
@@ -647,6 +653,7 @@ class OfficialApiClient(SunsynkApiClient):
             load_energy_today=load_energy_today,
             system_status=system_status,
             inverter_sn=self._inverter_sn,
+            settings=settings_data or {},
         )
 
     # ─── Public interface ───

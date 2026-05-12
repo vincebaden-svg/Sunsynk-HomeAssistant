@@ -55,6 +55,9 @@ class SunsynkData:
     inverter_sn: str = ""
     last_updated: datetime = field(default_factory=datetime.now)
 
+    # Inverter settings (read from /api/v1/common/setting/{sn}/read)
+    settings: dict = field(default_factory=dict)
+
 
 class SunsynkApiClient(ABC):
     """Abstract base class for Sunsynk API clients.

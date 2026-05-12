@@ -30,7 +30,18 @@ class SunsynkGridChargeSwitchEntity(CoordinatorEntity[SunsynkCoordinator], Switc
             return self._optimistic_state
         if self.coordinator.data is None:
             return None
-        # Actual grid_charge state field to be confirmed via API spike task
+        # Check time1on–time6on: if any timer is enabled, grid charge is "on"
+        settings = self.coordinator.data.settings
+        if not settings:
+            return None
+        # gridCharge field if it exists
+        grid_charge = settings.get("gridCharge")
+        if grid_charge is not None:
+            return str(grid_charge) == "1" or grid_charge is True
+        # Fall back to peakAndVallery (use timer = grid charge enabled)
+        peak_valley = settings.get("peakAndVallery")
+        if peak_valley is not None:
+            return str(peak_valley) == "1" or peak_valley is True
         return None
 
     async def async_turn_on(self, **kwargs) -> None:

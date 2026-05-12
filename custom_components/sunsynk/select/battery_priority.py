@@ -28,10 +28,16 @@ class SunsynkBatteryPrioritySelect(CoordinatorEntity[SunsynkCoordinator], Select
 
     @property
     def current_option(self) -> str | None:
-        """Return the current priority mode."""
+        """Return the current priority mode from API settings."""
         if self._optimistic_option is not None:
             return self._optimistic_option
-        return None
+        if self.coordinator.data is None:
+            return None
+        energy_mode = self.coordinator.data.settings.get("energyMode")
+        if energy_mode is None:
+            return None
+        # energyMode: 0 = battery priority, 1 = load priority
+        return "battery" if str(energy_mode) == "0" else "load"
 
     async def async_select_option(self, option: str) -> None:
         """Change the battery priority mode."""

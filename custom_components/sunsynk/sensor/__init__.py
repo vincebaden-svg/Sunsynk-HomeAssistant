@@ -11,6 +11,7 @@ from .energy import ENERGY_SENSORS, SunsynkEnergySensor
 from .power import POWER_SENSORS, SunsynkPowerSensor
 from .status import (
     SunsynkFaultCodeSensor,
+    SunsynkLastPolledSensor,
     SunsynkSystemStatusSensor,
     SunsynkWeatherDescriptionSensor,
     SunsynkWeatherTemperatureSensor,
@@ -38,6 +39,7 @@ async def async_setup_entry(
         SunsynkSystemStatusSensor(coordinator),
         SunsynkWeatherTemperatureSensor(coordinator),
         SunsynkWeatherDescriptionSensor(coordinator),
+        SunsynkLastPolledSensor(coordinator),
     ])
 
     async_add_entities(entities)

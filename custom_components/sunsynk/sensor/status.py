@@ -89,3 +89,24 @@ class SunsynkWeatherDescriptionSensor(CoordinatorEntity[SunsynkCoordinator], Sen
         if self.coordinator.data is None:
             return None
         return self.coordinator.data.weather_description
+
+
+class SunsynkLastPolledSensor(CoordinatorEntity[SunsynkCoordinator], SensorEntity):
+    """Sensor showing when the API was last successfully polled."""
+
+    _attr_has_entity_name = True
+    _attr_name = "Last Polled"
+    _attr_device_class = SensorDeviceClass.TIMESTAMP
+    _attr_icon = "mdi:clock-check-outline"
+
+    def __init__(self, coordinator: SunsynkCoordinator) -> None:
+        """Initialize the last polled sensor."""
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{coordinator._inverter_sn}_last_polled"
+
+    @property
+    def native_value(self):
+        """Return the timestamp of the last successful data fetch."""
+        if self.coordinator.data is None:
+            return None
+        return self.coordinator.data.last_updated

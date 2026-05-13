@@ -153,7 +153,7 @@ class SunsynkPowerSensor(CoordinatorEntity[SunsynkCoordinator], SensorEntity):
         """Initialize the sensor."""
         super().__init__(coordinator)
         self.entity_description = description
-        self._attr_unique_id = f"{coordinator._inverter_sn}_{description.key}"
+        self._attr_unique_id = f"sunsynk_{description.key}"
         self._attr_device_info = coordinator.device_info
         self._last_valid_value: float | None = None
 

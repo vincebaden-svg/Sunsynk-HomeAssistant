@@ -22,7 +22,7 @@ class SunsynkFaultCodeSensor(CoordinatorEntity[SunsynkCoordinator], SensorEntity
         """Initialize the fault code sensor."""
         super().__init__(coordinator)
         self._attr_device_info = coordinator.device_info
-        self._attr_unique_id = f"{coordinator._inverter_sn}_fault_code"
+        self._attr_unique_id = f"sunsynk_fault_code"
 
     @property
     def native_value(self) -> str:
@@ -42,7 +42,7 @@ class SunsynkSystemStatusSensor(CoordinatorEntity[SunsynkCoordinator], SensorEnt
         """Initialize the system status sensor."""
         super().__init__(coordinator)
         self._attr_device_info = coordinator.device_info
-        self._attr_unique_id = f"{coordinator._inverter_sn}_system_status"
+        self._attr_unique_id = f"sunsynk_system_status"
 
     @property
     def native_value(self) -> str | None:
@@ -65,7 +65,7 @@ class SunsynkWeatherTemperatureSensor(CoordinatorEntity[SunsynkCoordinator], Sen
         """Initialize the weather temperature sensor."""
         super().__init__(coordinator)
         self._attr_device_info = coordinator.device_info
-        self._attr_unique_id = f"{coordinator._inverter_sn}_weather_temperature"
+        self._attr_unique_id = f"sunsynk_weather_temperature"
 
     @property
     def native_value(self) -> float | None:
@@ -85,7 +85,7 @@ class SunsynkWeatherDescriptionSensor(CoordinatorEntity[SunsynkCoordinator], Sen
         """Initialize the weather description sensor."""
         super().__init__(coordinator)
         self._attr_device_info = coordinator.device_info
-        self._attr_unique_id = f"{coordinator._inverter_sn}_weather_description"
+        self._attr_unique_id = f"sunsynk_weather_description"
 
     @property
     def native_value(self) -> str | None:
@@ -107,7 +107,7 @@ class SunsynkLastPolledSensor(CoordinatorEntity[SunsynkCoordinator], SensorEntit
         """Initialize the last polled sensor."""
         super().__init__(coordinator)
         self._attr_device_info = coordinator.device_info
-        self._attr_unique_id = f"{coordinator._inverter_sn}_last_polled"
+        self._attr_unique_id = f"sunsynk_last_polled"
 
     @property
     def native_value(self):

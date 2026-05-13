@@ -24,7 +24,7 @@ class SunsynkBatteryPrioritySelect(CoordinatorEntity[SunsynkCoordinator], Select
         """Initialize the battery priority select."""
         super().__init__(coordinator)
         self._attr_device_info = coordinator.device_info
-        self._attr_unique_id = f"{coordinator._inverter_sn}_battery_priority"
+        self._attr_unique_id = f"sunsynk_battery_priority"
         self._optimistic_option: str | None = None
 
     @property

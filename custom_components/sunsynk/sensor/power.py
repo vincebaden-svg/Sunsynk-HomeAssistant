@@ -11,7 +11,7 @@ from homeassistant.components.sensor import (
     SensorEntityDescription,
     SensorStateClass,
 )
-from homeassistant.const import PERCENTAGE, UnitOfPower
+from homeassistant.const import PERCENTAGE, UnitOfElectricCurrent, UnitOfElectricPotential, UnitOfPower
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from ..api.base import SunsynkData
@@ -38,12 +38,44 @@ POWER_SENSORS: tuple[SunsynkSensorEntityDescription, ...] = (
         value_fn=lambda data: data.pv_power,
     ),
     SunsynkSensorEntityDescription(
+        key="pv1_power",
+        name="PV1 Power",
+        native_unit_of_measurement=UnitOfPower.WATT,
+        device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda data: data.pv1_power,
+    ),
+    SunsynkSensorEntityDescription(
+        key="pv2_power",
+        name="PV2 Power",
+        native_unit_of_measurement=UnitOfPower.WATT,
+        device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda data: data.pv2_power,
+    ),
+    SunsynkSensorEntityDescription(
         key="battery_power",
         name="Battery Power",
         native_unit_of_measurement=UnitOfPower.WATT,
         device_class=SensorDeviceClass.POWER,
         state_class=SensorStateClass.MEASUREMENT,
         value_fn=lambda data: data.battery_power,
+    ),
+    SunsynkSensorEntityDescription(
+        key="battery_voltage",
+        name="Battery Voltage",
+        native_unit_of_measurement=UnitOfElectricPotential.VOLT,
+        device_class=SensorDeviceClass.VOLTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda data: data.battery_voltage,
+    ),
+    SunsynkSensorEntityDescription(
+        key="battery_current",
+        name="Battery Current",
+        native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
+        device_class=SensorDeviceClass.CURRENT,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda data: data.battery_current,
     ),
     SunsynkSensorEntityDescription(
         key="battery_soc",

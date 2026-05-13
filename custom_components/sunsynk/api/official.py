@@ -595,6 +595,11 @@ class OfficialApiClient(SunsynkApiClient):
         # PV power — from flow (plant total) or input (inverter pac)
         pv_power = _float(flow_data.get("pvPower")) or _float(input_data.get("pac"))
 
+        # PV per-string power from input endpoint pvIV array
+        pv_iv = input_data.get("pvIV", [])
+        pv1_power = _float(pv_iv[0].get("ppv")) if len(pv_iv) > 0 else None
+        pv2_power = _float(pv_iv[1].get("ppv")) if len(pv_iv) > 1 else None
+
         # Battery — prefer inverter-level data, fall back to flow
         battery_power = _float(battery_data.get("power")) or _float(
             flow_data.get("battPower")
@@ -602,6 +607,8 @@ class OfficialApiClient(SunsynkApiClient):
         battery_soc = _float(battery_data.get("soc")) or _float(
             flow_data.get("soc")
         )
+        battery_voltage = _float(battery_data.get("voltage")) if battery_data.get("voltage") else None
+        battery_current = _float(battery_data.get("current")) if battery_data.get("current") else None
 
         # Grid — prefer inverter-level
         grid_power = _float(grid_data.get("pac")) or _float(
@@ -640,8 +647,12 @@ class OfficialApiClient(SunsynkApiClient):
 
         return SunsynkData(
             pv_power=pv_power,
+            pv1_power=pv1_power,
+            pv2_power=pv2_power,
             battery_power=battery_power,
             battery_soc=battery_soc,
+            battery_voltage=battery_voltage,
+            battery_current=battery_current,
             grid_power=grid_power,
             load_power=load_power,
             grid_connected=grid_connected,

@@ -13,12 +13,16 @@ class SunsynkData:
 
     # Power sensors (W) — None if not yet fetched or invalid
     pv_power: float | None = None
+    pv1_power: float | None = None
+    pv2_power: float | None = None
     battery_power: float | None = None  # positive = charging, negative = discharging
     grid_power: float | None = None     # positive = import, negative = export
     load_power: float | None = None
 
     # Battery state
     battery_soc: float | None = None    # percent 0-100
+    battery_voltage: float | None = None  # V
+    battery_current: float | None = None  # A
 
     # Grid connection
     grid_connected: bool = False

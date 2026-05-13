@@ -11,7 +11,7 @@ from homeassistant.components.sensor import (
     SensorEntityDescription,
     SensorStateClass,
 )
-from homeassistant.const import PERCENTAGE, UnitOfElectricCurrent, UnitOfElectricPotential, UnitOfPower
+from homeassistant.const import PERCENTAGE, UnitOfElectricCurrent, UnitOfElectricPotential, UnitOfPower, UnitOfTemperature
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from ..api.base import SunsynkData
@@ -68,6 +68,21 @@ POWER_SENSORS: tuple[SunsynkSensorEntityDescription, ...] = (
         device_class=SensorDeviceClass.BATTERY,
         state_class=SensorStateClass.MEASUREMENT,
         value_fn=lambda data: data.battery_soc,
+    ),
+    SunsynkSensorEntityDescription(
+        key="battery_temp",
+        name="Battery Temperature",
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda data: data.battery_temp,
+    ),
+    SunsynkSensorEntityDescription(
+        key="battery_capacity",
+        name="Battery Capacity",
+        native_unit_of_measurement="Ah",
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda data: data.battery_capacity,
     ),
     SunsynkSensorEntityDescription(
         key="grid_power",

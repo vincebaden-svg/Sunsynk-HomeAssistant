@@ -25,6 +25,8 @@ class SunsynkData:
     battery_soc: float | None = None    # percent 0-100
     battery_voltage: float | None = None  # V
     battery_current: float | None = None  # A
+    battery_temp: float | None = None     # °C
+    battery_capacity: float | None = None  # Ah (rated capacity)
 
     # Grid connection
     grid_connected: bool = False

@@ -611,6 +611,8 @@ class OfficialApiClient(SunsynkApiClient):
         )
         battery_voltage = _float(battery_data.get("voltage")) if battery_data.get("voltage") else None
         battery_current = _float(battery_data.get("current")) if battery_data.get("current") else None
+        battery_temp = _float(battery_data.get("temp")) if battery_data.get("temp") else None
+        battery_capacity = _float(battery_data.get("correctCap")) if battery_data.get("correctCap") else None
 
         # Grid — prefer inverter-level
         grid_power = _float(grid_data.get("pac")) or _float(
@@ -657,6 +659,8 @@ class OfficialApiClient(SunsynkApiClient):
             battery_soc=battery_soc,
             battery_voltage=battery_voltage,
             battery_current=battery_current,
+            battery_temp=battery_temp,
+            battery_capacity=battery_capacity,
             grid_power=grid_power,
             load_power=load_power,
             grid_connected=grid_connected,

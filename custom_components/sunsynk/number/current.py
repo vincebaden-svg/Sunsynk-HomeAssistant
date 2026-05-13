@@ -28,6 +28,7 @@ class SunsynkChargeCurrentNumber(CoordinatorEntity[SunsynkCoordinator], NumberEn
     def __init__(self, coordinator: SunsynkCoordinator) -> None:
         """Initialize the charge current number."""
         super().__init__(coordinator)
+        self._attr_device_info = coordinator.device_info
         self._attr_unique_id = f"{coordinator._inverter_sn}_charge_current"
         self._optimistic_value: float | None = None
 
@@ -68,6 +69,7 @@ class SunsynkDischargeCurrentNumber(CoordinatorEntity[SunsynkCoordinator], Numbe
     def __init__(self, coordinator: SunsynkCoordinator) -> None:
         """Initialize the discharge current number."""
         super().__init__(coordinator)
+        self._attr_device_info = coordinator.device_info
         self._attr_unique_id = f"{coordinator._inverter_sn}_discharge_current"
         self._optimistic_value: float | None = None
 

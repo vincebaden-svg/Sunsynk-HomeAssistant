@@ -31,6 +31,7 @@ class SunsynkGridConnectedSensor(CoordinatorEntity[SunsynkCoordinator], BinarySe
     def __init__(self, coordinator: SunsynkCoordinator) -> None:
         """Initialize the grid connected sensor."""
         super().__init__(coordinator)
+        self._attr_device_info = coordinator.device_info
         self._attr_unique_id = f"{coordinator._inverter_sn}_grid_connected"
         self._previous_state: bool | None = None
 

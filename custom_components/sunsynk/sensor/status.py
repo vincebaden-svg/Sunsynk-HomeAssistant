@@ -21,6 +21,7 @@ class SunsynkFaultCodeSensor(CoordinatorEntity[SunsynkCoordinator], SensorEntity
     def __init__(self, coordinator: SunsynkCoordinator) -> None:
         """Initialize the fault code sensor."""
         super().__init__(coordinator)
+        self._attr_device_info = coordinator.device_info
         self._attr_unique_id = f"{coordinator._inverter_sn}_fault_code"
 
     @property
@@ -40,6 +41,7 @@ class SunsynkSystemStatusSensor(CoordinatorEntity[SunsynkCoordinator], SensorEnt
     def __init__(self, coordinator: SunsynkCoordinator) -> None:
         """Initialize the system status sensor."""
         super().__init__(coordinator)
+        self._attr_device_info = coordinator.device_info
         self._attr_unique_id = f"{coordinator._inverter_sn}_system_status"
 
     @property
@@ -62,6 +64,7 @@ class SunsynkWeatherTemperatureSensor(CoordinatorEntity[SunsynkCoordinator], Sen
     def __init__(self, coordinator: SunsynkCoordinator) -> None:
         """Initialize the weather temperature sensor."""
         super().__init__(coordinator)
+        self._attr_device_info = coordinator.device_info
         self._attr_unique_id = f"{coordinator._inverter_sn}_weather_temperature"
 
     @property
@@ -81,6 +84,7 @@ class SunsynkWeatherDescriptionSensor(CoordinatorEntity[SunsynkCoordinator], Sen
     def __init__(self, coordinator: SunsynkCoordinator) -> None:
         """Initialize the weather description sensor."""
         super().__init__(coordinator)
+        self._attr_device_info = coordinator.device_info
         self._attr_unique_id = f"{coordinator._inverter_sn}_weather_description"
 
     @property
@@ -102,6 +106,7 @@ class SunsynkLastPolledSensor(CoordinatorEntity[SunsynkCoordinator], SensorEntit
     def __init__(self, coordinator: SunsynkCoordinator) -> None:
         """Initialize the last polled sensor."""
         super().__init__(coordinator)
+        self._attr_device_info = coordinator.device_info
         self._attr_unique_id = f"{coordinator._inverter_sn}_last_polled"
 
     @property

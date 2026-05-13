@@ -5,6 +5,7 @@ from datetime import timedelta
 import logging
 
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .api.base import SunsynkApiClient, SunsynkData
@@ -57,6 +58,18 @@ class SunsynkCoordinator(DataUpdateCoordinator[SunsynkData]):
             inverter_sn=inverter_sn,
         )
         self._storage: SunsynkStorage | None = None
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return device info for the inverter."""
+        return DeviceInfo(
+            identifiers={(DOMAIN, self._inverter_sn)},
+            name=f"Sunsynk Inverter {self._inverter_sn}",
+            manufacturer="Sunsynk",
+            model="Hybrid Inverter",
+            serial_number=self._inverter_sn,
+            sw_version="0.1.0",
+        )
 
     async def async_init_storage(self, db_path: str, retention_days: int = 30) -> None:
         """Initialize the time-series storage."""

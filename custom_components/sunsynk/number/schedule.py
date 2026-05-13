@@ -28,6 +28,7 @@ class SunsynkProgPowerNumber(CoordinatorEntity[SunsynkCoordinator], NumberEntity
         super().__init__(coordinator)
         self._slot = slot
         self._attr_name = f"Program {slot} Power"
+        self._attr_device_info = coordinator.device_info
         self._attr_unique_id = f"{coordinator._inverter_sn}_prog{slot}_power"
         self._optimistic_value: float | None = None
 
@@ -68,6 +69,7 @@ class SunsynkProgCapacityNumber(CoordinatorEntity[SunsynkCoordinator], NumberEnt
         super().__init__(coordinator)
         self._slot = slot
         self._attr_name = f"Program {slot} SOC"
+        self._attr_device_info = coordinator.device_info
         self._attr_unique_id = f"{coordinator._inverter_sn}_prog{slot}_capacity"
         self._optimistic_value: float | None = None
 

@@ -64,7 +64,7 @@ class SunsynkCoordinator(DataUpdateCoordinator[SunsynkData]):
         """Return device info for the inverter."""
         return DeviceInfo(
             identifiers={(DOMAIN, self._inverter_sn)},
-            name=f"Sunsynk Inverter {self._inverter_sn}",
+            name="Sunsynk",
             manufacturer="Sunsynk",
             model="Hybrid Inverter",
             serial_number=self._inverter_sn,

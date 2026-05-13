@@ -34,8 +34,21 @@ class SunsynkProgPowerNumber(CoordinatorEntity[SunsynkCoordinator], NumberEntity
 
     @property
     def native_value(self) -> float | None:
-        """Return current value."""
-        return self._optimistic_value
+        """Return current program power from settings."""
+        if self._optimistic_value is not None:
+            return self._optimistic_value
+        if self.coordinator.data is None:
+            return None
+        settings = self.coordinator.data.settings
+        if not settings:
+            return None
+        val = settings.get(f"sellTime{self._slot}Pac")
+        if val is None:
+            return None
+        try:
+            return float(val)
+        except (ValueError, TypeError):
+            return None
 
     async def async_set_native_value(self, value: float) -> None:
         """Set the power limit for this slot."""
@@ -75,8 +88,21 @@ class SunsynkProgCapacityNumber(CoordinatorEntity[SunsynkCoordinator], NumberEnt
 
     @property
     def native_value(self) -> float | None:
-        """Return current value."""
-        return self._optimistic_value
+        """Return current program SOC from settings."""
+        if self._optimistic_value is not None:
+            return self._optimistic_value
+        if self.coordinator.data is None:
+            return None
+        settings = self.coordinator.data.settings
+        if not settings:
+            return None
+        val = settings.get(f"cap{self._slot}")
+        if val is None:
+            return None
+        try:
+            return float(val)
+        except (ValueError, TypeError):
+            return None
 
     async def async_set_native_value(self, value: float) -> None:
         """Set the SOC capacity for this slot."""

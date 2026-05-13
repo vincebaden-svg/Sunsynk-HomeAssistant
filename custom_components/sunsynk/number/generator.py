@@ -123,8 +123,21 @@ class SunsynkGeneratorNumber(CoordinatorEntity[SunsynkCoordinator], NumberEntity
 
     @property
     def native_value(self) -> float | None:
-        """Return the current value."""
-        return self._optimistic_value
+        """Return the current value from inverter settings."""
+        if self._optimistic_value is not None:
+            return self._optimistic_value
+        if self.coordinator.data is None:
+            return None
+        settings = self.coordinator.data.settings
+        if not settings:
+            return None
+        val = settings.get(self.entity_description.write_key)
+        if val is None:
+            return None
+        try:
+            return float(val)
+        except (ValueError, TypeError):
+            return None
 
     async def async_set_native_value(self, value: float) -> None:
         """Set the value — requires Tier 3 confirmation."""

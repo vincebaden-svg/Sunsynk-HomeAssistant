@@ -34,11 +34,21 @@ class SunsynkChargeCurrentNumber(CoordinatorEntity[SunsynkCoordinator], NumberEn
 
     @property
     def native_value(self) -> float | None:
-        """Return the current charge current limit."""
+        """Return the current charge current limit from settings."""
         if self._optimistic_value is not None:
             return self._optimistic_value
-        # Will be populated from API data once field is confirmed
-        return None
+        if self.coordinator.data is None:
+            return None
+        settings = self.coordinator.data.settings
+        if not settings:
+            return None
+        val = settings.get("batteryMaxCurrentCharge")
+        if val is None:
+            return None
+        try:
+            return float(val)
+        except (ValueError, TypeError):
+            return None
 
     async def async_set_native_value(self, value: float) -> None:
         """Set the maximum charge current."""
@@ -75,10 +85,21 @@ class SunsynkDischargeCurrentNumber(CoordinatorEntity[SunsynkCoordinator], Numbe
 
     @property
     def native_value(self) -> float | None:
-        """Return the current discharge current limit."""
+        """Return the current discharge current limit from settings."""
         if self._optimistic_value is not None:
             return self._optimistic_value
-        return None
+        if self.coordinator.data is None:
+            return None
+        settings = self.coordinator.data.settings
+        if not settings:
+            return None
+        val = settings.get("batteryMaxCurrentDischarge")
+        if val is None:
+            return None
+        try:
+            return float(val)
+        except (ValueError, TypeError):
+            return None
 
     async def async_set_native_value(self, value: float) -> None:
         """Set the maximum discharge current."""

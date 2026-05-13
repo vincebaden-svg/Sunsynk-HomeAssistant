@@ -66,6 +66,7 @@ views:
           battery_soc_184: sensor.battery_soc
           battery_voltage_183: sensor.sunsynk_inverter_2207197610_battery_voltage
           battery_current_191: sensor.sunsynk_inverter_2207197610_battery_current
+          battery_temp_182: sensor.sunsynk_inverter_2207197610_battery_temperature
           day_battery_charge_70: sensor.battery_charge_today
           day_battery_discharge_71: sensor.battery_discharge_today
           day_pv_energy_108: sensor.pv_energy_today
@@ -77,8 +78,6 @@ views:
           grid_ct_power_172: sensor.grid_power
           grid_connected_status_194: binary_sensor.grid_connected
           essential_power: sensor.load_power
-          battery_temp_182: sensor.sunsynk_inverter_2207197610_battery_temperature
-          battery_rated_capacity: sensor.sunsynk_inverter_2207197610_battery_capacity
       - type: gauge
         entity: sensor.battery_soc
         name: Battery SOC

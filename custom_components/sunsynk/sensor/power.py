@@ -38,22 +38,6 @@ POWER_SENSORS: tuple[SunsynkSensorEntityDescription, ...] = (
         value_fn=lambda data: data.pv_power,
     ),
     SunsynkSensorEntityDescription(
-        key="pv1_power",
-        name="PV1 Power",
-        native_unit_of_measurement=UnitOfPower.WATT,
-        device_class=SensorDeviceClass.POWER,
-        state_class=SensorStateClass.MEASUREMENT,
-        value_fn=lambda data: data.pv1_power,
-    ),
-    SunsynkSensorEntityDescription(
-        key="pv2_power",
-        name="PV2 Power",
-        native_unit_of_measurement=UnitOfPower.WATT,
-        device_class=SensorDeviceClass.POWER,
-        state_class=SensorStateClass.MEASUREMENT,
-        value_fn=lambda data: data.pv2_power,
-    ),
-    SunsynkSensorEntityDescription(
         key="battery_power",
         name="Battery Power",
         native_unit_of_measurement=UnitOfPower.WATT,
@@ -102,6 +86,42 @@ POWER_SENSORS: tuple[SunsynkSensorEntityDescription, ...] = (
         value_fn=lambda data: data.load_power,
     ),
 )
+
+# PV string sensors — created dynamically based on user config
+PV_STRING_SENSORS: dict[int, SunsynkSensorEntityDescription] = {
+    1: SunsynkSensorEntityDescription(
+        key="pv1_power",
+        name="PV1 Power",
+        native_unit_of_measurement=UnitOfPower.WATT,
+        device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda data: data.pv1_power,
+    ),
+    2: SunsynkSensorEntityDescription(
+        key="pv2_power",
+        name="PV2 Power",
+        native_unit_of_measurement=UnitOfPower.WATT,
+        device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda data: data.pv2_power,
+    ),
+    3: SunsynkSensorEntityDescription(
+        key="pv3_power",
+        name="PV3 Power",
+        native_unit_of_measurement=UnitOfPower.WATT,
+        device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda data: data.pv3_power,
+    ),
+    4: SunsynkSensorEntityDescription(
+        key="pv4_power",
+        name="PV4 Power",
+        native_unit_of_measurement=UnitOfPower.WATT,
+        device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda data: data.pv4_power,
+    ),
+}
 
 
 class SunsynkPowerSensor(CoordinatorEntity[SunsynkCoordinator], SensorEntity):

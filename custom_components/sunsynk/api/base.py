@@ -15,6 +15,8 @@ class SunsynkData:
     pv_power: float | None = None
     pv1_power: float | None = None
     pv2_power: float | None = None
+    pv3_power: float | None = None
+    pv4_power: float | None = None
     battery_power: float | None = None  # positive = charging, negative = discharging
     grid_power: float | None = None     # positive = import, negative = export
     load_power: float | None = None

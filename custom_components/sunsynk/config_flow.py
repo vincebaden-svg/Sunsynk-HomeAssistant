@@ -184,6 +184,10 @@ class SunsynkOptionsFlow(config_entries.OptionsFlow):
                     default=current.get("poll_interval_minutes", 5),
                 ): vol.All(int, vol.Range(min=5, max=60)),
                 vol.Optional(
+                    "pv_strings",
+                    default=current.get("pv_strings", 2),
+                ): vol.All(int, vol.Range(min=1, max=4)),
+                vol.Optional(
                     "soc_threshold",
                     default=current.get("soc_threshold", DEFAULT_SOC_THRESHOLD),
                 ): vol.All(float, vol.Range(min=0, max=100)),

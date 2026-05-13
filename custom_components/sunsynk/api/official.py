@@ -599,6 +599,8 @@ class OfficialApiClient(SunsynkApiClient):
         pv_iv = input_data.get("pvIV", [])
         pv1_power = _float(pv_iv[0].get("ppv")) if len(pv_iv) > 0 else None
         pv2_power = _float(pv_iv[1].get("ppv")) if len(pv_iv) > 1 else None
+        pv3_power = _float(pv_iv[2].get("ppv")) if len(pv_iv) > 2 else None
+        pv4_power = _float(pv_iv[3].get("ppv")) if len(pv_iv) > 3 else None
 
         # Battery — prefer inverter-level data, fall back to flow
         battery_power = _float(battery_data.get("power")) or _float(
@@ -649,6 +651,8 @@ class OfficialApiClient(SunsynkApiClient):
             pv_power=pv_power,
             pv1_power=pv1_power,
             pv2_power=pv2_power,
+            pv3_power=pv3_power,
+            pv4_power=pv4_power,
             battery_power=battery_power,
             battery_soc=battery_soc,
             battery_voltage=battery_voltage,

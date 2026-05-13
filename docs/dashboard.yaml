@@ -31,23 +31,6 @@ views:
           show_daily: true
           auto_scale: true
           invert_power: true
-        battery2:
-          energy: 0
-          shutdown_soc: 20
-          soc_end_of_charge: 100
-          invert_power: false
-          hide_soc: false
-          colour: '#ffc0cb'
-          show_remaining_energy: true
-          remaining_energy_to_shutdown: false
-          show_absolute: false
-          auto_scale: true
-          dynamic_colour: true
-          linear_gradient: true
-          animate: true
-          path_threshold: 100
-          navigate: ''
-          invert_flow: false
         solar:
           show_daily: true
           mppts: 2
@@ -62,25 +45,25 @@ views:
           auto_scale: true
         type: custom:sunsynk-power-flow-card
         entities:
-          battery_power_190: sensor.battery_power
-          battery_soc_184: sensor.battery_soc
-          battery_voltage_183: sensor.sunsynk_inverter_2207197610_battery_voltage
-          battery_current_191: sensor.sunsynk_inverter_2207197610_battery_current
-          battery_temp_182: sensor.sunsynk_inverter_2207197610_battery_temperature
-          battery_rated_capacity: sensor.sunsynk_inverter_2207197610_battery_capacity
-          day_battery_charge_70: sensor.battery_charge_today
-          day_battery_discharge_71: sensor.battery_discharge_today
-          day_pv_energy_108: sensor.pv_energy_today
-          pv1_power_186: sensor.sunsynk_inverter_2207197610_pv1_power
-          pv2_power_187: sensor.sunsynk_inverter_2207197610_pv2_power
-          day_load_energy_84: sensor.load_energy_today
-          day_grid_import_76: sensor.grid_import_today
-          day_grid_export_77: sensor.grid_export_today
-          grid_ct_power_172: sensor.grid_power
-          grid_connected_status_194: binary_sensor.grid_connected
-          essential_power: sensor.load_power
+          battery_power_190: sensor.sunsynk_battery_power
+          battery_soc_184: sensor.sunsynk_battery_soc
+          battery_voltage_183: sensor.sunsynk_battery_voltage
+          battery_current_191: sensor.sunsynk_battery_current
+          battery_temp_182: sensor.sunsynk_battery_temperature
+          battery_rated_capacity: sensor.sunsynk_battery_capacity
+          day_battery_charge_70: sensor.sunsynk_battery_charge_today
+          day_battery_discharge_71: sensor.sunsynk_battery_discharge_today
+          day_pv_energy_108: sensor.sunsynk_pv_energy_today
+          pv1_power_186: sensor.sunsynk_pv1_power
+          pv2_power_187: sensor.sunsynk_pv2_power
+          day_load_energy_84: sensor.sunsynk_load_energy_today
+          day_grid_import_76: sensor.sunsynk_grid_import_today
+          day_grid_export_77: sensor.sunsynk_grid_export_today
+          grid_ct_power_172: sensor.sunsynk_grid_power
+          grid_connected_status_194: binary_sensor.sunsynk_grid_connected
+          essential_power: sensor.sunsynk_load_power
       - type: gauge
-        entity: sensor.battery_soc
+        entity: sensor.sunsynk_battery_soc
         name: Battery SOC
         unit: '%'
         min: 0
@@ -93,34 +76,34 @@ views:
       - type: entities
         title: Today's Energy (kWh)
         entities:
-          - entity: sensor.pv_energy_today
+          - entity: sensor.sunsynk_pv_energy_today
             name: Solar Generated
             icon: mdi:solar-power
-          - entity: sensor.battery_charge_today
+          - entity: sensor.sunsynk_battery_charge_today
             name: Battery Charged
             icon: mdi:battery-plus
-          - entity: sensor.battery_discharge_today
+          - entity: sensor.sunsynk_battery_discharge_today
             name: Battery Discharged
             icon: mdi:battery-minus
-          - entity: sensor.grid_import_today
+          - entity: sensor.sunsynk_grid_import_today
             name: Grid Import
             icon: mdi:transmission-tower-import
-          - entity: sensor.grid_export_today
+          - entity: sensor.sunsynk_grid_export_today
             name: Grid Export
             icon: mdi:transmission-tower-export
-          - entity: sensor.load_energy_today
+          - entity: sensor.sunsynk_load_energy_today
             name: Load Consumed
             icon: mdi:home-lightning-bolt
       - type: entities
         title: System Status
         entities:
-          - entity: binary_sensor.grid_connected
+          - entity: binary_sensor.sunsynk_grid_connected
             name: Grid Connection
-          - entity: sensor.system_status
+          - entity: sensor.sunsynk_system_status
             name: System Status
-          - entity: sensor.fault_code
+          - entity: sensor.sunsynk_fault_code
             name: Fault Code
-          - entity: sensor.last_polled
+          - entity: sensor.sunsynk_last_polled
             name: Last Updated
   - title: Controls
     path: sunsynk-controls
@@ -129,45 +112,45 @@ views:
       - type: entities
         title: Inverter Controls
         entities:
-          - entity: select.work_mode
+          - entity: select.sunsynk_work_mode
             name: Work Mode
-          - entity: select.battery_priority
+          - entity: select.sunsynk_battery_priority
             name: Battery Priority
-          - entity: switch.grid_charge
+          - entity: switch.sunsynk_grid_charge
             name: Grid Charge
       - type: entities
         title: Battery Details
         entities:
-          - entity: sensor.battery_soc
+          - entity: sensor.sunsynk_battery_soc
             name: SOC
-          - entity: sensor.battery_power
+          - entity: sensor.sunsynk_battery_power
             name: Power
-          - entity: sensor.sunsynk_inverter_2207197610_battery_voltage
+          - entity: sensor.sunsynk_battery_voltage
             name: Voltage
-          - entity: sensor.sunsynk_inverter_2207197610_battery_current
+          - entity: sensor.sunsynk_battery_current
             name: Current
-          - entity: sensor.sunsynk_inverter_2207197610_battery_temperature
+          - entity: sensor.sunsynk_battery_temperature
             name: Temperature
-          - entity: sensor.sunsynk_inverter_2207197610_battery_capacity
+          - entity: sensor.sunsynk_battery_capacity
             name: Capacity
       - type: entities
         title: PV Strings
         entities:
-          - entity: sensor.pv_power
+          - entity: sensor.sunsynk_pv_power
             name: Total PV
-          - entity: sensor.sunsynk_inverter_2207197610_pv1_power
+          - entity: sensor.sunsynk_pv1_power
             name: PV1
-          - entity: sensor.sunsynk_inverter_2207197610_pv2_power
+          - entity: sensor.sunsynk_pv2_power
             name: PV2
       - type: history-graph
         title: Power (last 24h)
         hours_to_show: 24
         entities:
-          - entity: sensor.pv_power
+          - entity: sensor.sunsynk_pv_power
             name: Solar
-          - entity: sensor.battery_power
+          - entity: sensor.sunsynk_battery_power
             name: Battery
-          - entity: sensor.grid_power
+          - entity: sensor.sunsynk_grid_power
             name: Grid
-          - entity: sensor.load_power
+          - entity: sensor.sunsynk_load_power
             name: Load

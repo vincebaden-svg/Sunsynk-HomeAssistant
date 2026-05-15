@@ -8,6 +8,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from ..const import DOMAIN
 from ..coordinator import SunsynkCoordinator
 from .battery_priority import SunsynkBatteryPrioritySelect
+from .schedule_time import create_schedule_time_entities
 from .work_mode import SunsynkWorkModeSelect
 
 
@@ -18,7 +19,11 @@ async def async_setup_entry(
 ) -> None:
     """Set up Sunsynk select entities."""
     coordinator: SunsynkCoordinator = hass.data[DOMAIN][entry.entry_id]
-    async_add_entities([
+
+    entities = [
         SunsynkBatteryPrioritySelect(coordinator),
         SunsynkWorkModeSelect(coordinator),
-    ])
+    ]
+    entities.extend(create_schedule_time_entities(coordinator))
+
+    async_add_entities(entities)

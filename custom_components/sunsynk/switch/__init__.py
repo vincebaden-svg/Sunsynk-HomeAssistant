@@ -8,6 +8,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from ..const import DOMAIN
 from ..coordinator import SunsynkCoordinator
 from .grid_charge import SunsynkGridChargeSwitchEntity
+from .schedule_enabled import create_schedule_enabled_entities
 
 
 async def async_setup_entry(
@@ -17,4 +18,8 @@ async def async_setup_entry(
 ) -> None:
     """Set up Sunsynk switch entities."""
     coordinator: SunsynkCoordinator = hass.data[DOMAIN][entry.entry_id]
-    async_add_entities([SunsynkGridChargeSwitchEntity(coordinator)])
+
+    entities = [SunsynkGridChargeSwitchEntity(coordinator)]
+    entities.extend(create_schedule_enabled_entities(coordinator))
+
+    async_add_entities(entities)

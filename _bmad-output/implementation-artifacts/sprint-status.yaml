@@ -106,7 +106,7 @@ development_status:
 
   # ─── Epic 10: Growth — Advanced Write Surface [Growth Phase] ───
   epic-10: in-progress
-  10-1-implement-charging-schedule-entities: backlog
+  10-1-implement-charging-schedule-entities: done
   10-2-implement-generator-aux-parameter-entities: done
   10-3-implement-sell-settings-with-two-step-confirmation: done
   epic-10-retrospective: optional

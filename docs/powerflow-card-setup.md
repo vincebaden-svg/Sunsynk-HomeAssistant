@@ -1,0 +1,186 @@
+# Sunsynk Power Flow Card Setup
+
+The integration auto-provisions a basic dashboard with built-in HA cards. For the animated power flow visualization (like the Sunsynk Connect app), install the community `sunsynk-power-flow-card` and paste the config below.
+
+## Step 1: Install the Card
+
+1. Open HACS → Frontend
+2. Search for "sunsynk-power-flow-card"
+3. Install it
+4. Restart HA
+
+## Step 2: Add to Dashboard
+
+1. Open your Sunsynk Solar dashboard
+2. Click the pencil icon (edit mode)
+3. Three-dot menu → Raw configuration editor
+4. Replace the contents with the YAML below
+5. Save
+
+## Dashboard YAML
+
+```yaml
+title: Sunsynk Solar
+views:
+  - title: Overview
+    path: sunsynk-overview
+    icon: mdi:solar-power
+    cards:
+      - cardstyle: lite
+        wide: false
+        large_font: false
+        show_solar: true
+        show_battery: true
+        show_grid: true
+        center_no_grid: false
+        card_height: 100%
+        card_width: 100%
+        decimal_places: 2
+        decimal_places_energy: 1
+        dynamic_line_width: true
+        max_line_width: 4
+        min_line_width: 1
+        inverter:
+          model: sunsynk
+          modern: true
+          auto_scale: true
+          autarky: power
+          label_autarky: Self Sufficiency
+          label_ratio: Self Consumption
+        battery:
+          energy: 0
+          shutdown_soc: 20
+          show_daily: true
+          auto_scale: true
+          invert_power: true
+        solar:
+          show_daily: true
+          mppts: 2
+          auto_scale: true
+        load:
+          show_daily: true
+          auto_scale: true
+        grid:
+          show_daily_buy: true
+          show_daily_sell: true
+          show_nonessential: false
+          auto_scale: true
+        type: custom:sunsynk-power-flow-card
+        entities:
+          battery_power_190: sensor.sunsynk_battery_power
+          battery_soc_184: sensor.sunsynk_battery_soc
+          battery_voltage_183: sensor.sunsynk_battery_voltage
+          battery_current_191: sensor.sunsynk_battery_current
+          battery_temp_182: sensor.sunsynk_battery_temperature
+          battery_rated_capacity: sensor.sunsynk_battery_capacity
+          day_battery_charge_70: sensor.sunsynk_battery_charge_today
+          day_battery_discharge_71: sensor.sunsynk_battery_discharge_today
+          day_pv_energy_108: sensor.sunsynk_pv_energy_today
+          pv1_power_186: sensor.sunsynk_pv1_power
+          pv2_power_187: sensor.sunsynk_pv2_power
+          day_load_energy_84: sensor.sunsynk_load_energy_today
+          day_grid_import_76: sensor.sunsynk_grid_import_today
+          day_grid_export_77: sensor.sunsynk_grid_export_today
+          grid_ct_power_172: sensor.sunsynk_grid_power
+          grid_connected_status_194: binary_sensor.sunsynk_grid_connected
+          essential_power: sensor.sunsynk_load_power
+      - type: gauge
+        entity: sensor.sunsynk_battery_soc
+        name: Battery SOC
+        unit: '%'
+        min: 0
+        max: 100
+        needle: true
+        severity:
+          green: 50
+          yellow: 20
+          red: 0
+      - type: entities
+        title: Today's Energy (kWh)
+        entities:
+          - entity: sensor.sunsynk_pv_energy_today
+            name: Solar Generated
+            icon: mdi:solar-power
+          - entity: sensor.sunsynk_battery_charge_today
+            name: Battery Charged
+            icon: mdi:battery-plus
+          - entity: sensor.sunsynk_battery_discharge_today
+            name: Battery Discharged
+            icon: mdi:battery-minus
+          - entity: sensor.sunsynk_grid_import_today
+            name: Grid Import
+            icon: mdi:transmission-tower-import
+          - entity: sensor.sunsynk_grid_export_today
+            name: Grid Export
+            icon: mdi:transmission-tower-export
+          - entity: sensor.sunsynk_load_energy_today
+            name: Load Consumed
+            icon: mdi:home-lightning-bolt
+      - type: entities
+        title: System Status
+        entities:
+          - entity: binary_sensor.sunsynk_grid_connected
+            name: Grid Connection
+          - entity: sensor.sunsynk_system_status
+            name: System Status
+          - entity: sensor.sunsynk_fault_code
+            name: Fault Code
+          - entity: sensor.sunsynk_last_polled
+            name: Last Updated
+  - title: Controls
+    path: sunsynk-controls
+    icon: mdi:tune
+    cards:
+      - type: entities
+        title: Inverter Controls
+        entities:
+          - entity: select.sunsynk_work_mode
+            name: Work Mode
+          - entity: select.sunsynk_battery_priority
+            name: Battery Priority
+          - entity: switch.sunsynk_grid_charge
+            name: Grid Charge
+      - type: entities
+        title: Battery Details
+        entities:
+          - entity: sensor.sunsynk_battery_soc
+            name: SOC
+          - entity: sensor.sunsynk_battery_power
+            name: Power
+          - entity: sensor.sunsynk_battery_voltage
+            name: Voltage
+          - entity: sensor.sunsynk_battery_current
+            name: Current
+          - entity: sensor.sunsynk_battery_temperature
+            name: Temperature
+          - entity: sensor.sunsynk_battery_capacity
+            name: Capacity
+      - type: entities
+        title: PV Strings
+        entities:
+          - entity: sensor.sunsynk_pv_power
+            name: Total PV
+          - entity: sensor.sunsynk_pv1_power
+            name: PV1
+          - entity: sensor.sunsynk_pv2_power
+            name: PV2
+      - type: history-graph
+        title: Power (last 24h)
+        hours_to_show: 24
+        entities:
+          - entity: sensor.sunsynk_pv_power
+            name: Solar
+          - entity: sensor.sunsynk_battery_power
+            name: Battery
+          - entity: sensor.sunsynk_grid_power
+            name: Grid
+          - entity: sensor.sunsynk_load_power
+            name: Load
+```
+
+## Notes
+
+- Adjust `mppts: 2` if you have more or fewer PV strings
+- The `invert_power: true` on battery means negative = discharge, positive = charge
+- If entity names don't match (e.g. after reinstall), check Developer Tools → States and update accordingly
+- The `battery_rated_capacity` field shows remaining runtime if you set `energy:` to your total battery Wh (e.g. 15960 for 3x 5.32kWh)

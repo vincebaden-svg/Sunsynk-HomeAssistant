@@ -1,0 +1,25 @@
+blueprint:
+  name: "Sunsynk: Low Battery Alert"
+  description: >
+    Sends a notification when battery SOC drops below the configured threshold.
+    Fires on every poll while SOC remains below threshold (no cooldown).
+  domain: automation
+  source_url: https://github.com/vincebaden-svg/Sunsynk-HomeAssistant
+  input:
+    notify_device:
+      name: Notification Device
+      description: "Device to send notifications to"
+      selector:
+        device:
+          integration: mobile_app
+
+trigger:
+  - platform: event
+    event_type: sunsynk_battery_low
+
+action:
+  - device_id: !input notify_device
+    domain: mobile_app
+    type: notify
+    message: "🔋 Battery low! SOC at {{ trigger.event.data.soc | round(0) }}% (threshold: {{ trigger.event.data.threshold | round(0) }}%). Consider reducing load."
+    title: "Low Battery"

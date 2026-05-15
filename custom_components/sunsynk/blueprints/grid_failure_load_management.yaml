@@ -1,0 +1,63 @@
+blueprint:
+  name: "Sunsynk: Grid Failure Notification"
+  description: >
+    Sends a notification when the grid fails or is restored.
+    Includes battery SOC in the message. Optionally turns off a switch
+    (e.g. pool motor, geyser) on grid failure.
+  domain: automation
+  source_url: https://github.com/vincebaden-svg/Sunsynk-HomeAssistant
+  input:
+    notify_device:
+      name: Notification Device
+      description: "Device to send notifications to"
+      selector:
+        device:
+          integration: mobile_app
+    control_switch:
+      name: Switch to Control (optional)
+      description: "A switch to turn OFF on grid failure and ON when restored. Leave empty to skip."
+      default: ""
+      selector:
+        entity:
+          domain: switch
+
+trigger:
+  - platform: event
+    event_type: sunsynk_grid_failure
+    id: grid_failure
+  - platform: event
+    event_type: sunsynk_grid_restored
+    id: grid_restored
+
+action:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id: grid_failure
+        sequence:
+          - device_id: !input notify_device
+            domain: mobile_app
+            type: notify
+            message: "⚡ Grid failure detected. Battery at {{ trigger.event.data.battery_soc | round(0) }}%. Avoid heavy loads."
+            title: "Grid Failure"
+          - condition: template
+            value_template: "{{ control_switch is defined and control_switch != '' }}"
+          - service: switch.turn_off
+            target:
+              entity_id: !input control_switch
+      - conditions:
+          - condition: trigger
+            id: grid_restored
+        sequence:
+          - device_id: !input notify_device
+            domain: mobile_app
+            type: notify
+            message: "✅ Grid restored. Battery at {{ trigger.event.data.battery_soc | round(0) }}%."
+            title: "Grid Restored"
+          - condition: template
+            value_template: "{{ control_switch is defined and control_switch != '' }}"
+          - service: switch.turn_on
+            target:
+              entity_id: !input control_switch
+    variables:
+      control_switch: !input control_switch

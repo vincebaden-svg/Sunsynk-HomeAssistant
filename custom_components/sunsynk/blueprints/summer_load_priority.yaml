@@ -1,0 +1,77 @@
+blueprint:
+  name: "Sunsynk: Summer Load Priority Switching"
+  description: >
+    Automatically switches to load priority when solar generation is high
+    and battery is full during daytime hours. Reverts to battery priority
+    outside the active window. Saves battery cycles by using solar directly.
+  domain: automation
+  source_url: https://github.com/vincebaden-svg/Sunsynk-HomeAssistant
+  input:
+    pv_threshold:
+      name: PV Generation Threshold (W)
+      description: "Switch to load priority when PV exceeds this value"
+      default: 3000
+      selector:
+        number:
+          min: 0
+          max: 20000
+          unit_of_measurement: "W"
+    soc_threshold:
+      name: Battery SOC Threshold (%)
+      description: "Switch to load priority when SOC exceeds this value"
+      default: 95
+      selector:
+        number:
+          min: 0
+          max: 100
+          unit_of_measurement: "%"
+    time_start:
+      name: Active Window Start
+      description: "Only switch during this time window"
+      default: "08:00:00"
+      selector:
+        time:
+    time_end:
+      name: Active Window End
+      description: "Revert to battery priority after this time"
+      default: "16:00:00"
+      selector:
+        time:
+
+trigger:
+  - platform: numeric_state
+    entity_id: sensor.sunsynk_pv_power
+    above: !input pv_threshold
+    id: pv_high
+  - platform: time
+    at: !input time_end
+    id: window_end
+
+condition: []
+
+action:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id: pv_high
+          - condition: time
+            after: !input time_start
+            before: !input time_end
+          - condition: numeric_state
+            entity_id: sensor.sunsynk_battery_soc
+            above: !input soc_threshold
+        sequence:
+          - service: select.select_option
+            target:
+              entity_id: select.sunsynk_battery_priority
+            data:
+              option: "load"
+      - conditions:
+          - condition: trigger
+            id: window_end
+        sequence:
+          - service: select.select_option
+            target:
+              entity_id: select.sunsynk_battery_priority
+            data:
+              option: "battery"

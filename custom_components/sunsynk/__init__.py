@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from datetime import timedelta
 import logging
+from pathlib import Path
+import shutil
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -19,6 +21,24 @@ from .dashboard import async_provision_dashboard
 _LOGGER = logging.getLogger(__name__)
 
 PLATFORMS: list[str] = ["sensor", "binary_sensor", "switch", "select", "number"]
+
+
+def _install_blueprints(hass: HomeAssistant) -> None:
+    """Copy bundled blueprints to HA's blueprint directory (idempotent)."""
+    source_dir = Path(__file__).parent / "blueprints"
+    if not source_dir.exists():
+        return
+
+    target_dir = Path(hass.config.path("blueprints/automation/sunsynk"))
+    target_dir.mkdir(parents=True, exist_ok=True)
+
+    for blueprint_file in source_dir.glob("*.yaml"):
+        target_file = target_dir / blueprint_file.name
+        if not target_file.exists():
+            shutil.copy2(blueprint_file, target_file)
+            _LOGGER.info("Installed blueprint: %s", blueprint_file.name)
+        else:
+            _LOGGER.debug("Blueprint already exists: %s", blueprint_file.name)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -76,6 +96,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     # Auto-provision dashboard on first setup (idempotent)
     await async_provision_dashboard(hass, inverter_sn)
+
+    # Install bundled blueprints to HA's blueprint directory (idempotent)
+    await hass.async_add_executor_job(_install_blueprints, hass)
 
     return True
 

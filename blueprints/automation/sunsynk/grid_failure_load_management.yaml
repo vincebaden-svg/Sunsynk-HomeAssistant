@@ -1,41 +1,22 @@
 blueprint:
-  name: "Sunsynk: Grid Failure Load Management"
+  name: "Sunsynk: Grid Failure Notification"
   description: >
     Sends a notification when the grid fails or is restored.
-    Optionally controls a switch (e.g. pool motor) automatically on grid failure.
+    Includes battery SOC in the message. Optionally turns off a switch
+    (e.g. pool motor, geyser) on grid failure.
   domain: automation
-  source_url: https://github.com/vinbaden/ha-sunsynk
+  source_url: https://github.com/vincebaden-svg/Sunsynk-HomeAssistant
   input:
-    notify_target:
-      name: Notification Service
-      description: "The notify service to use (e.g. notify.telegram or notify.mobile_app)"
+    notify_device:
+      name: Notification Device
+      description: "Device to send notifications to"
       selector:
-        text:
-    soc_threshold:
-      name: Battery SOC Threshold (%)
-      description: "Include battery SOC in the notification message"
-      default: 20
-      selector:
-        number:
-          min: 0
-          max: 100
-          unit_of_measurement: "%"
-    failure_message:
-      name: Grid Failure Message
-      description: "Message to send when grid fails"
-      default: "⚡ Grid failure detected. Battery at {soc}%. Please avoid heavy loads."
-      selector:
-        text:
-    restored_message:
-      name: Grid Restored Message
-      description: "Message to send when grid is restored"
-      default: "✅ Grid restored. Battery at {soc}%."
-      selector:
-        text:
+        device:
+          integration: mobile_app
     control_switch:
       name: Switch to Control (optional)
-      description: "A switch to turn OFF when grid fails (e.g. pool motor)"
-      default: {}
+      description: "A switch to turn OFF on grid failure and ON when restored. Leave empty to skip."
+      default: ""
       selector:
         entity:
           domain: switch
@@ -54,20 +35,29 @@ action:
           - condition: trigger
             id: grid_failure
         sequence:
-          - service: !input notify_target
-            data:
-              message: !input failure_message
-          - if:
-              - condition: template
-                value_template: "{{ control_switch != {} }}"
-            then:
-              - service: switch.turn_off
-                target:
-                  entity_id: !input control_switch
+          - device_id: !input notify_device
+            domain: mobile_app
+            type: notify
+            message: "⚡ Grid failure detected. Battery at {{ trigger.event.data.battery_soc | round(0) }}%. Avoid heavy loads."
+            title: "Grid Failure"
+          - condition: template
+            value_template: "{{ control_switch is defined and control_switch != '' }}"
+          - service: switch.turn_off
+            target:
+              entity_id: !input control_switch
       - conditions:
           - condition: trigger
             id: grid_restored
         sequence:
-          - service: !input notify_target
-            data:
-              message: !input restored_message
+          - device_id: !input notify_device
+            domain: mobile_app
+            type: notify
+            message: "✅ Grid restored. Battery at {{ trigger.event.data.battery_soc | round(0) }}%."
+            title: "Grid Restored"
+          - condition: template
+            value_template: "{{ control_switch is defined and control_switch != '' }}"
+          - service: switch.turn_on
+            target:
+              entity_id: !input control_switch
+    variables:
+      control_switch: !input control_switch

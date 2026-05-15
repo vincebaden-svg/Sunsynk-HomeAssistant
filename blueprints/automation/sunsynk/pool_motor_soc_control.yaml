@@ -1,11 +1,10 @@
 blueprint:
   name: "Sunsynk: Pool Motor SOC Control"
   description: >
-    Automatically turns a pool motor (or any switch) on/off based on battery SOC
-    and solar generation. Turns off when SOC drops below the low threshold,
-    turns back on when SOC rises above the high threshold and solar is generating.
+    Turns off a pool motor (or any switch) when battery SOC drops below threshold
+    or grid fails. Turns it back on when SOC recovers above the high threshold.
   domain: automation
-  source_url: https://github.com/vinbaden/ha-sunsynk
+  source_url: https://github.com/vincebaden-svg/Sunsynk-HomeAssistant
   input:
     pool_switch:
       name: Pool Motor Switch
@@ -31,50 +30,40 @@ blueprint:
           min: 0
           max: 100
           unit_of_measurement: "%"
-    pv_on_threshold:
-      name: PV Generation On Threshold (W)
-      description: "Minimum solar generation required to turn pool motor back on"
-      default: 1500
-      selector:
-        number:
-          min: 0
-          max: 20000
-          unit_of_measurement: "W"
-    notify_target:
-      name: Notification Service (optional)
-      description: "Notify service for status updates"
-      default: ""
-      selector:
-        text:
 
 trigger:
-  - platform: event
-    event_type: sunsynk_battery_low
-    id: battery_low
+  - platform: numeric_state
+    entity_id: sensor.sunsynk_battery_soc
+    below: !input soc_off_threshold
+    id: soc_low
+  - platform: numeric_state
+    entity_id: sensor.sunsynk_battery_soc
+    above: !input soc_on_threshold
+    id: soc_high
   - platform: event
     event_type: sunsynk_grid_failure
     id: grid_failure
+  - platform: event
+    event_type: sunsynk_grid_restored
+    id: grid_restored
 
 action:
   - choose:
       - conditions:
           - condition: trigger
-            id: battery_low
+            id:
+              - soc_low
+              - grid_failure
         sequence:
           - service: switch.turn_off
             target:
               entity_id: !input pool_switch
-          - if:
-              - condition: template
-                value_template: "{{ notify_target != '' }}"
-            then:
-              - service: !input notify_target
-                data:
-                  message: "🔋 Pool motor turned off — battery SOC below threshold."
       - conditions:
           - condition: trigger
-            id: grid_failure
+            id:
+              - soc_high
+              - grid_restored
         sequence:
-          - service: switch.turn_off
+          - service: switch.turn_on
             target:
               entity_id: !input pool_switch

@@ -120,5 +120,5 @@ development_status:
   11-5-dashboard-with-power-flow-card: done
   11-6-fix-number-entities-read-current-state: done
   11-7-verify-ha-energy-dashboard-compatibility: done
-  11-8-test-and-fix-automation-blueprints: backlog
+  11-8-test-and-fix-automation-blueprints: done
   epic-11-retrospective: optional

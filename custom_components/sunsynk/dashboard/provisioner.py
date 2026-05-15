@@ -1,11 +1,11 @@
 """Idempotent Lovelace dashboard provisioner for Sunsynk."""
 from __future__ import annotations
 
+import json
 import logging
 from pathlib import Path
 
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import json as json_helper
 
 from .layout import get_dashboard_config
 
@@ -22,9 +22,9 @@ async def async_provision_dashboard(
 ) -> None:
     """Create the Sunsynk Lovelace dashboard if it doesn't already exist.
 
-    This writes a storage-mode dashboard config file directly, which is the
-    most reliable approach across HA versions. The dashboard appears in the
-    sidebar after a restart or lovelace reload.
+    Strategy:
+    1. Try HA's programmatic lovelace dashboards API (works on most versions)
+    2. Fallback: write .storage files directly using stdlib json
     """
     try:
         # Check if dashboard storage file already exists
@@ -35,7 +35,7 @@ async def async_provision_dashboard(
             )
             return
 
-        # Try the programmatic approach first (HA 2024.1+)
+        # Try the programmatic approach first
         if await _try_programmatic_provision(hass, inverter_sn):
             return
 
@@ -89,6 +89,24 @@ async def _try_programmatic_provision(
         return False
 
 
+def _read_json_file(path: Path) -> dict:
+    """Read a JSON file, return empty dict if missing or invalid."""
+    if not path.exists():
+        return {}
+    try:
+        with open(path, encoding="utf-8") as f:
+            return json.load(f)
+    except (json.JSONDecodeError, OSError):
+        return {}
+
+
+def _write_json_file(path: Path, data: dict) -> None:
+    """Write a dict to a JSON file."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+
+
 async def _write_dashboard_storage(
     hass: HomeAssistant, inverter_sn: str
 ) -> None:
@@ -104,20 +122,20 @@ async def _write_dashboard_storage(
     }
 
     storage_path = Path(hass.config.path(DASHBOARD_FILENAME))
-    storage_path.parent.mkdir(parents=True, exist_ok=True)
 
-    await hass.async_add_executor_job(
-        json_helper.save_json, str(storage_path), storage_data
-    )
+    await hass.async_add_executor_job(_write_json_file, storage_path, storage_data)
 
     # Also register the dashboard in lovelace_dashboards so it appears in sidebar
     dashboards_path = Path(hass.config.path(".storage/lovelace_dashboards"))
-    if dashboards_path.exists():
-        existing = await hass.async_add_executor_job(
-            json_helper.load_json, str(dashboards_path)
-        )
-    else:
-        existing = {"version": 1, "minor_version": 1, "key": "lovelace_dashboards", "data": {"items": []}}
+
+    existing = await hass.async_add_executor_job(_read_json_file, dashboards_path)
+    if not existing:
+        existing = {
+            "version": 1,
+            "minor_version": 1,
+            "key": "lovelace_dashboards",
+            "data": {"items": []},
+        }
 
     # Check if already registered
     items = existing.get("data", {}).get("items", [])
@@ -138,9 +156,8 @@ async def _write_dashboard_storage(
     })
     existing.setdefault("data", {})["items"] = items
 
-    await hass.async_add_executor_job(
-        json_helper.save_json, str(dashboards_path), existing
-    )
+    await hass.async_add_executor_job(_write_json_file, dashboards_path, existing)
     _LOGGER.info(
-        "Sunsynk dashboard registered and config written. Restart HA to see it in sidebar."
+        "Sunsynk dashboard registered and config written. "
+        "Restart HA to see it in sidebar."
     )

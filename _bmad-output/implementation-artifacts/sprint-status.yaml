@@ -94,7 +94,7 @@ development_status:
 
   # ─── Epic 8: Auto-Provisioned Dashboard ───
   epic-8: in-progress
-  8-1-implement-idempotent-dashboard-provisioner: backlog
+  8-1-implement-idempotent-dashboard-provisioner: done
   8-2-implement-dashboard-layout-with-quick-action-buttons: done
   epic-8-retrospective: optional
 

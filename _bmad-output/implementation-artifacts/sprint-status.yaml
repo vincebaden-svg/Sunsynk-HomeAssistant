@@ -119,6 +119,6 @@ development_status:
   11-4-device-registration-and-consistent-entity-naming: done
   11-5-dashboard-with-power-flow-card: done
   11-6-fix-number-entities-read-current-state: done
-  11-7-verify-ha-energy-dashboard-compatibility: backlog
+  11-7-verify-ha-energy-dashboard-compatibility: done
   11-8-test-and-fix-automation-blueprints: backlog
   epic-11-retrospective: optional

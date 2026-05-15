@@ -1,0 +1,7 @@
+{
+  "app_key": "YOUR_APP_KEY",
+  "app_secret": "YOUR_APP_SECRET",
+  "username": "YOUR_EMAIL",
+  "password": "YOUR_PASSWORD",
+  "inverter_sn": "YOUR_INVERTER_SERIAL"
+}

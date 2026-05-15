@@ -47,3 +47,13 @@ _bmad/
 .agents/
 .claude/
 docs/api-login.html
+
+# Data dumps with private info
+*.txt
+battpriority.txt
+loadpriority.txt
+settings.txt
+allvalues.txt
+
+# Test credentials (private — never commit)
+test_config.json

@@ -152,6 +152,50 @@ class SunsynkConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         await client.authenticate()
 
+    async def async_step_reconfigure(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Handle reconfiguration (e.g. password change)."""
+        errors: dict[str, str] = {}
+        entry = self.hass.config_entries.async_get_entry(self.context["entry_id"])
+        assert entry is not None
+
+        if user_input is not None:
+            # Merge new credentials with existing data
+            updated_data = {**entry.data, **user_input}
+            self._data = updated_data
+            try:
+                await self._validate_credentials()
+            except Exception as err:  # noqa: BLE001
+                _LOGGER.error("Reconfigure validation failed: %s", err)
+                errors["base"] = "cannot_connect"
+            else:
+                self.hass.config_entries.async_update_entry(entry, data=updated_data)
+                await self.hass.config_entries.async_reload(entry.entry_id)
+                return self.async_abort(reason="reconfigure_successful")
+
+        # Show form with current values (password blank for security)
+        api_mode = entry.data.get("api_mode", API_MODE_UNOFFICIAL)
+
+        if api_mode == API_MODE_OFFICIAL:
+            schema = vol.Schema({
+                vol.Required("username", default=entry.data.get("username", "")): str,
+                vol.Required("password"): str,
+                vol.Required("app_key", default=entry.data.get("app_key", "")): str,
+                vol.Required("app_secret"): str,
+            })
+        else:
+            schema = vol.Schema({
+                vol.Required("username", default=entry.data.get("username", "")): str,
+                vol.Required("password"): str,
+            })
+
+        return self.async_show_form(
+            step_id="reconfigure",
+            data_schema=schema,
+            errors=errors,
+        )
+
     @staticmethod
     @callback
     def async_get_options_flow(

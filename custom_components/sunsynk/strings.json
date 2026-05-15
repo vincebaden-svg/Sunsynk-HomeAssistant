@@ -39,7 +39,22 @@
       "unknown": "Unexpected error. Check the logs for details."
     },
     "abort": {
-      "already_configured": "This inverter is already configured."
+      "already_configured": "This inverter is already configured.",
+      "reconfigure_successful": "Credentials updated successfully. The integration will reconnect."
+    }
+  },
+  "config_flow": {
+    "step": {
+      "reconfigure": {
+        "title": "Update Credentials",
+        "description": "Update your Sunsynk account credentials. Useful if you changed your password.",
+        "data": {
+          "username": "Email Address",
+          "password": "New Password",
+          "app_key": "App Key",
+          "app_secret": "App Secret"
+        }
+      }
     }
   },
   "options": {

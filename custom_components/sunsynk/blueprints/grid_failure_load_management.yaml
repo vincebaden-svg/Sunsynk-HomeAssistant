@@ -14,16 +14,19 @@ blueprint:
           min: 0
           max: 9999999999
           mode: box
+    use_switch:
+      name: Control a switch on grid failure?
+      description: "Enable to turn off a switch when grid fails"
+      default: false
+      selector:
+        boolean:
     control_switch:
-      name: Switch to Control (optional)
-      description: "A switch to turn OFF on grid failure and ON when restored. Leave empty to skip."
-      default: ""
+      name: Switch to Control
+      description: "Switch to turn OFF on grid failure and ON when restored (only used if above is enabled)"
+      default: switch.none
       selector:
         entity:
           domain: switch
-
-variables:
-  switch_entity: !input control_switch
 
 trigger:
   - platform: event
@@ -44,7 +47,7 @@ action:
               chat_id: !input chat_id
               message: "⚡ Grid failure detected. Battery at {{ trigger.event.data.battery_soc | round(0) }}%. Avoid heavy loads."
           - condition: template
-            value_template: "{{ switch_entity != '' }}"
+            value_template: "{{ use_switch }}"
           - action: switch.turn_off
             target:
               entity_id: !input control_switch
@@ -57,7 +60,10 @@ action:
               chat_id: !input chat_id
               message: "✅ Grid restored. Battery at {{ trigger.event.data.battery_soc | round(0) }}%."
           - condition: template
-            value_template: "{{ switch_entity != '' }}"
+            value_template: "{{ use_switch }}"
           - action: switch.turn_on
             target:
               entity_id: !input control_switch
+
+variables:
+  use_switch: !input use_switch

@@ -1,26 +1,25 @@
 blueprint:
   name: "Sunsynk: Low Battery Alert"
   description: >
-    Sends a notification when battery SOC drops below the configured threshold.
-    Works with any notify entity (Telegram, mobile app, email, etc.).
+    Sends a Telegram notification when battery SOC drops below threshold.
   domain: automation
   source_url: https://github.com/vincebaden-svg/Sunsynk-HomeAssistant
   input:
-    notify_entity:
-      name: Notification Entity
-      description: "Select your notification entity (e.g. Telegram chat, mobile app)"
+    chat_id:
+      name: Telegram Chat ID
+      description: "Your Telegram chat ID"
       selector:
-        entity:
-          domain: notify
+        number:
+          min: 0
+          max: 9999999999
+          mode: box
 
 trigger:
   - platform: event
     event_type: sunsynk_battery_low
 
 action:
-  - action: notify.send_message
-    target:
-      entity_id: !input notify_entity
+  - action: telegram_bot.send_message
     data:
+      target: !input chat_id
       message: "🔋 Battery low! SOC at {{ trigger.event.data.soc | round(0) }}% (threshold: {{ trigger.event.data.threshold | round(0) }}%). Consider reducing load."
-      title: "Low Battery"

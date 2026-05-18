@@ -1,29 +1,28 @@
 blueprint:
   name: "Sunsynk: Daily Energy Summary"
   description: >
-    Sends a daily energy summary with solar, grid, load, and battery stats.
-    Works with any notify entity (Telegram, mobile app, email, etc.).
+    Sends a daily Telegram message with solar, grid, load, and battery stats.
     Fires at the time configured in the integration options (default 18:00).
   domain: automation
   source_url: https://github.com/vincebaden-svg/Sunsynk-HomeAssistant
   input:
-    notify_entity:
-      name: Notification Entity
-      description: "Select your notification entity (e.g. Telegram chat, mobile app)"
+    chat_id:
+      name: Telegram Chat ID
+      description: "Your Telegram chat ID"
       selector:
-        entity:
-          domain: notify
+        number:
+          min: 0
+          max: 9999999999
+          mode: box
 
 trigger:
   - platform: event
     event_type: sunsynk_daily_summary
 
 action:
-  - action: notify.send_message
-    target:
-      entity_id: !input notify_entity
+  - action: telegram_bot.send_message
     data:
-      title: "Daily Energy Summary"
+      target: !input chat_id
       message: >
         ☀️ Energy Summary ({{ trigger.event.data.date }})
 

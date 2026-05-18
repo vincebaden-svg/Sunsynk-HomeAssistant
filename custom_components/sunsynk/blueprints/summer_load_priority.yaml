@@ -1,9 +1,9 @@
 blueprint:
   name: "Sunsynk: Summer Load Priority Switching"
   description: >
-    Automatically switches to load priority when solar generation is high
-    and battery is full during daytime hours. Reverts to battery priority
-    outside the active window. Saves battery cycles by using solar directly.
+    Automatically switches to load priority when solar is high and battery
+    is full during daytime. Reverts to battery priority after the time window.
+    Saves battery cycles by using solar directly.
   domain: automation
   source_url: https://github.com/vincebaden-svg/Sunsynk-HomeAssistant
   input:
@@ -47,8 +47,6 @@ trigger:
     at: !input time_end
     id: window_end
 
-condition: []
-
 action:
   - choose:
       - conditions:
@@ -61,7 +59,7 @@ action:
             entity_id: sensor.sunsynk_battery_soc
             above: !input soc_threshold
         sequence:
-          - service: select.select_option
+          - action: select.select_option
             target:
               entity_id: select.sunsynk_battery_priority
             data:
@@ -70,7 +68,7 @@ action:
           - condition: trigger
             id: window_end
         sequence:
-          - service: select.select_option
+          - action: select.select_option
             target:
               entity_id: select.sunsynk_battery_priority
             data:

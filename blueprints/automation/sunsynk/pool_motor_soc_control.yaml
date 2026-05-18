@@ -2,7 +2,7 @@ blueprint:
   name: "Sunsynk: Pool Motor SOC Control"
   description: >
     Turns off a pool motor (or any switch) when battery SOC drops below threshold
-    or grid fails. Turns it back on when SOC recovers above the high threshold.
+    or grid fails. Turns it back on when SOC recovers or grid is restored.
   domain: automation
   source_url: https://github.com/vincebaden-svg/Sunsynk-HomeAssistant
   input:
@@ -14,7 +14,7 @@ blueprint:
           domain: switch
     soc_off_threshold:
       name: SOC Off Threshold (%)
-      description: "Turn off pool motor when battery SOC drops below this value"
+      description: "Turn off when battery SOC drops below this value"
       default: 30
       selector:
         number:
@@ -23,7 +23,7 @@ blueprint:
           unit_of_measurement: "%"
     soc_on_threshold:
       name: SOC On Threshold (%)
-      description: "Turn on pool motor when battery SOC rises above this value"
+      description: "Turn back on when battery SOC rises above this value"
       default: 60
       selector:
         number:
@@ -55,7 +55,7 @@ action:
               - soc_low
               - grid_failure
         sequence:
-          - service: switch.turn_off
+          - action: switch.turn_off
             target:
               entity_id: !input pool_switch
       - conditions:
@@ -64,6 +64,6 @@ action:
               - soc_high
               - grid_restored
         sequence:
-          - service: switch.turn_on
+          - action: switch.turn_on
             target:
               entity_id: !input pool_switch

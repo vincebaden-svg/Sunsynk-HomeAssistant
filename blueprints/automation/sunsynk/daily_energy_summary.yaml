@@ -1,34 +1,35 @@
 blueprint:
   name: "Sunsynk: Daily Energy Summary"
   description: >
-    Sends a daily energy summary notification with today's solar generation,
-    grid usage, load consumption, and battery statistics.
+    Sends a daily energy summary with solar, grid, load, and battery stats.
+    Works with any notify entity (Telegram, mobile app, email, etc.).
     Fires at the time configured in the integration options (default 18:00).
   domain: automation
   source_url: https://github.com/vincebaden-svg/Sunsynk-HomeAssistant
   input:
-    notify_device:
-      name: Notification Device
-      description: "Device to send notifications to"
+    notify_entity:
+      name: Notification Entity
+      description: "Select your notification entity (e.g. Telegram chat, mobile app)"
       selector:
-        device:
-          integration: mobile_app
+        entity:
+          domain: notify
 
 trigger:
   - platform: event
     event_type: sunsynk_daily_summary
 
 action:
-  - device_id: !input notify_device
-    domain: mobile_app
-    type: notify
-    title: "Daily Energy Summary"
-    message: >
-      ☀️ Energy Summary ({{ trigger.event.data.date }})
+  - action: notify.send_message
+    target:
+      entity_id: !input notify_entity
+    data:
+      title: "Daily Energy Summary"
+      message: >
+        ☀️ Energy Summary ({{ trigger.event.data.date }})
 
-      Solar: {{ trigger.event.data.pv_energy_today | round(1) }} kWh
-      Grid Import: {{ trigger.event.data.grid_import_today | round(1) }} kWh
-      Grid Export: {{ trigger.event.data.grid_export_today | round(1) }} kWh
-      Load: {{ trigger.event.data.load_energy_today | round(1) }} kWh
-      Battery Charged: {{ trigger.event.data.battery_charge_today | round(1) }} kWh
-      Battery Discharged: {{ trigger.event.data.battery_discharge_today | round(1) }} kWh
+        Solar: {{ trigger.event.data.pv_energy_today | round(1) }} kWh
+        Grid Import: {{ trigger.event.data.grid_import_today | round(1) }} kWh
+        Grid Export: {{ trigger.event.data.grid_export_today | round(1) }} kWh
+        Load: {{ trigger.event.data.load_energy_today | round(1) }} kWh
+        Battery Charged: {{ trigger.event.data.battery_charge_today | round(1) }} kWh
+        Battery Discharged: {{ trigger.event.data.battery_discharge_today | round(1) }} kWh

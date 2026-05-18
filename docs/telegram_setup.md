@@ -1,67 +1,55 @@
-# Setting Up Telegram Notifications
+# Telegram Notification Setup (HA 2025.11+)
 
-This guide walks you through setting up Telegram notifications for the Sunsynk integration.
+Since Home Assistant 2025.11, Telegram uses entity-based notifications. Each chat ID gets its own `notify` entity that you select in blueprints.
 
 ## Step 1: Create a Telegram Bot
 
-1. Open Telegram and search for **@BotFather**
-2. Send `/newbot` and follow the prompts
-3. Choose a name (e.g. "My Sunsynk Bot") and a username (must end in `bot`, e.g. `my_sunsynk_bot`)
-4. BotFather will give you a **bot token** — save it (looks like `123456789:ABCdef...`)
+1. Open Telegram, search for **@BotFather**
+2. Send `/newbot`
+3. Choose a name (e.g. "Home Assistant")
+4. Choose a username (e.g. `my_ha_bot`)
+5. Copy the **API token** (looks like `123456789:ABCdefGHIjklMNOpqrsTUVwxyz`)
 
 ## Step 2: Get Your Chat ID
 
-1. Start a conversation with your new bot (search for it and send `/start`)
-2. Visit this URL in your browser (replace `YOUR_TOKEN`):
+1. Search for your new bot in Telegram and send it any message (e.g. "hello")
+2. Open this URL in a browser (replace YOUR_TOKEN):
    ```
    https://api.telegram.org/botYOUR_TOKEN/getUpdates
    ```
-3. Look for `"chat":{"id":` in the response — that number is your **chat ID**
+3. Find `"chat":{"id":123456789}` — that number is your **chat ID**
 
-## Step 3: Configure Home Assistant
+## Step 3: Add Telegram Integration in HA
 
-Add this to your `configuration.yaml`:
+1. Go to **Settings → Devices & Services → Add Integration**
+2. Search for **Telegram Bot**
+3. Choose **Polling** (works without exposing HA to the internet)
+4. Enter:
+   - API Key: your bot token from Step 1
+   - Allowed Chat IDs: your chat ID from Step 2
+5. Click Submit
 
-```yaml
-telegram_bot:
-  - platform: polling
-    api_key: "YOUR_BOT_TOKEN"
-    allowed_chat_ids:
-      - YOUR_CHAT_ID
+## Step 4: Find Your Notify Entity
 
-notify:
-  - name: telegram
-    platform: telegram
-    chat_id: YOUR_CHAT_ID
-```
+After adding the integration:
 
-Restart Home Assistant after saving.
+1. Go to **Settings → Devices & Services → Telegram Bot**
+2. Click on the device
+3. You'll see a `notify` entity like `notify.telegram_bot_123456789`
+4. This is what you select in the Sunsynk blueprints
 
-## Step 4: Test It
+## Step 5: Use in Sunsynk Blueprints
 
-In HA Developer Tools → Services, call:
-```yaml
-service: notify.telegram
-data:
-  message: "Test from Sunsynk!"
-```
+1. Go to **Settings → Automations & Scenes → Blueprints**
+2. Find any Sunsynk blueprint (e.g. "Grid Failure Notification")
+3. Click **Create Automation**
+4. In the **Notification Entity** dropdown, select your Telegram notify entity
+5. Save
 
-## Step 5: Install a Blueprint
+That's it — you'll receive Telegram messages when events fire.
 
-Go to **Settings → Blueprints** and find the Sunsynk blueprints. Click **Grid Failure Load Management**, select `notify.telegram` as the notification service, and save.
+## Troubleshooting
 
-## Example Automation YAML
-
-```yaml
-automation:
-  - alias: "Sunsynk Grid Failure Alert"
-    trigger:
-      - platform: event
-        event_type: sunsynk_grid_failure
-    action:
-      - service: notify.telegram
-        data:
-          message: >
-            ⚡ Grid failure! Battery at {{ trigger.event.data.battery_soc }}%.
-            Please avoid heavy loads.
-```
+- **No notify entity appears:** Make sure you sent a message to the bot first, then re-add the integration
+- **Messages not arriving:** Check the chat ID is correct and the bot token is valid
+- **Multiple chats:** Add multiple chat IDs in Step 3 — each gets its own notify entity

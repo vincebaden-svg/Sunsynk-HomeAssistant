@@ -41,7 +41,7 @@ action:
         sequence:
           - action: telegram_bot.send_message
             data:
-              target: !input chat_id
+              chat_id: !input chat_id
               message: "⚡ Grid failure detected. Battery at {{ trigger.event.data.battery_soc | round(0) }}%. Avoid heavy loads."
           - condition: template
             value_template: "{{ switch_entity != '' }}"
@@ -54,7 +54,7 @@ action:
         sequence:
           - action: telegram_bot.send_message
             data:
-              target: !input chat_id
+              chat_id: !input chat_id
               message: "✅ Grid restored. Battery at {{ trigger.event.data.battery_soc | round(0) }}%."
           - condition: template
             value_template: "{{ switch_entity != '' }}"

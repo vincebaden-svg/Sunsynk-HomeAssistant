@@ -22,7 +22,7 @@ trigger:
 action:
   - action: telegram_bot.send_message
     data:
-      target: !input chat_id
+      chat_id: !input chat_id
       message: >
         ☀️ Energy Summary ({{ trigger.event.data.date }})
 

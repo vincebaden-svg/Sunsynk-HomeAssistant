@@ -21,5 +21,5 @@ trigger:
 action:
   - action: telegram_bot.send_message
     data:
-      target: !input chat_id
+      chat_id: !input chat_id
       message: "🔋 Battery low! SOC at {{ trigger.event.data.soc | round(0) }}% (threshold: {{ trigger.event.data.threshold | round(0) }}%). Consider reducing load."

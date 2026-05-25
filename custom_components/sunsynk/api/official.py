@@ -354,8 +354,14 @@ class OfficialApiClient(SunsynkApiClient):
             f"{UNOFFICIAL_API_BASE}/api/v1/common/setting/{sn}/read"
         )
 
+        # 7. Plant details (monthly/yearly energy totals)
+        plant_details = await _get_json(
+            f"{UNOFFICIAL_API_BASE}/api/v1/plant/{plant_id}?lan=en"
+        )
+
         return self._build_sunsynk_data(
-            flow_data, battery_data, grid_data, load_data, input_data, settings_data
+            flow_data, battery_data, grid_data, load_data, input_data,
+            settings_data, plant_details
         )
 
     # ─── Pure official strategy: HMAC-signed GET requests ───
@@ -561,7 +567,7 @@ class OfficialApiClient(SunsynkApiClient):
             )
 
         return self._build_sunsynk_data(
-            flow_data, battery_data, grid_data, load_data, input_data, {}
+            flow_data, battery_data, grid_data, load_data, input_data, {}, {}
         )
 
     # ─── Common helpers ───
@@ -574,6 +580,7 @@ class OfficialApiClient(SunsynkApiClient):
         load_data: dict,
         input_data: dict,
         settings_data: dict | None = None,
+        plant_details: dict | None = None,
     ) -> SunsynkData:
         """Build SunsynkData from multiple endpoint responses.
 
@@ -649,6 +656,25 @@ class OfficialApiClient(SunsynkApiClient):
             f"grid_status={grid_status}" if grid_status is not None else None
         )
 
+        # Cumulative energy totals — from plant details and inverter endpoints
+        plant = plant_details or {}
+
+        # Monthly totals from plant details
+        pv_energy_month = _float(plant.get("emonth")) if plant.get("emonth") else None
+        grid_import_month = _float(plant.get("gridBuyMonthly")) if plant.get("gridBuyMonthly") else None
+        load_energy_month = _float(plant.get("useMonthly")) if plant.get("useMonthly") else None
+
+        # Yearly totals from plant details
+        pv_energy_year = _float(plant.get("eyear")) if plant.get("eyear") else None
+        grid_import_year = _float(plant.get("gridBuyYearly")) if plant.get("gridBuyYearly") else None
+        load_energy_year = _float(plant.get("useYearly")) if plant.get("useYearly") else None
+
+        # Fallback: try etotal from inverter-level endpoints if plant doesn't have monthly/yearly
+        if pv_energy_month is None:
+            pv_energy_month = _float(input_data.get("emonth")) if input_data.get("emonth") else None
+        if pv_energy_year is None:
+            pv_energy_year = _float(input_data.get("eyear")) if input_data.get("eyear") else None
+
         return SunsynkData(
             pv_power=pv_power,
             pv1_power=pv1_power,
@@ -670,6 +696,12 @@ class OfficialApiClient(SunsynkApiClient):
             grid_import_today=grid_import_today,
             grid_export_today=grid_export_today,
             load_energy_today=load_energy_today,
+            pv_energy_month=pv_energy_month,
+            grid_import_month=grid_import_month,
+            load_energy_month=load_energy_month,
+            pv_energy_year=pv_energy_year,
+            grid_import_year=grid_import_year,
+            load_energy_year=load_energy_year,
             system_status=system_status,
             inverter_sn=self._inverter_sn,
             settings=settings_data or {},

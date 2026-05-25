@@ -7,7 +7,7 @@ DOMAIN = "sunsynk"
 
 # Polling configuration
 DEFAULT_POLL_INTERVAL = timedelta(minutes=5)
-MIN_POLL_INTERVAL = timedelta(minutes=5)
+MIN_POLL_INTERVAL = timedelta(minutes=1)
 MAX_POLL_INTERVAL = timedelta(minutes=60)
 
 # Alert thresholds

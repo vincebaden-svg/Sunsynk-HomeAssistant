@@ -226,7 +226,7 @@ class SunsynkOptionsFlow(config_entries.OptionsFlow):
                 vol.Optional(
                     "poll_interval_minutes",
                     default=current.get("poll_interval_minutes", 5),
-                ): vol.All(int, vol.Range(min=5, max=60)),
+                ): vol.All(int, vol.Range(min=1, max=60)),
                 vol.Optional(
                     "pv_strings",
                     default=current.get("pv_strings", 2),

@@ -230,11 +230,11 @@ class SunsynkOptionsFlow(config_entries.OptionsFlow):
                 vol.Optional(
                     "soc_threshold",
                     default=current.get("soc_threshold", DEFAULT_SOC_THRESHOLD),
-                ): vol.All(float, vol.Range(min=0, max=100)),
+                ): vol.All(vol.Coerce(float), vol.Range(min=0, max=100)),
                 vol.Optional(
                     "solar_threshold",
                     default=current.get("solar_threshold", DEFAULT_SOLAR_THRESHOLD),
-                ): vol.All(float, vol.Range(min=0, max=20000)),
+                ): vol.All(vol.Coerce(float), vol.Range(min=0, max=20000)),
                 vol.Optional(
                     "summary_time",
                     default=current.get("summary_time", DEFAULT_SUMMARY_TIME),

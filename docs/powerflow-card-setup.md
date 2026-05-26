@@ -52,7 +52,7 @@ views:
           shutdown_soc: 20
           show_daily: true
           auto_scale: true
-          invert_power: true
+          invert_power: false
         solar:
           show_daily: true
           mppts: 2

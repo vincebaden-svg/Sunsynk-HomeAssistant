@@ -163,5 +163,44 @@ def get_dashboard_config(inverter_sn: str) -> dict:
                     },
                 ],
             },
+            {
+                "title": "Timer",
+                "path": "sunsynk-timer",
+                "icon": "mdi:timer-cog",
+                "cards": [
+                    {
+                        "type": "entities",
+                        "title": "System Mode Timer",
+                        "entities": [
+                            {
+                                "entity": f"switch.{prefix}_use_timer",
+                                "name": "Use Timer",
+                            },
+                        ],
+                    },
+                    {
+                        "type": "grid",
+                        "columns": 5,
+                        "square": False,
+                        "cards": [
+                            {"type": "markdown", "content": "**Start**"},
+                            {"type": "markdown", "content": "**Power**"},
+                            {"type": "markdown", "content": "**SOC**"},
+                            {"type": "markdown", "content": "**Grid**"},
+                            {"type": "markdown", "content": "**Gen**"},
+                        ] + [
+                            card
+                            for slot in range(1, 7)
+                            for card in [
+                                {"type": "tile", "entity": f"select.{prefix}_program_{slot}_time", "hide_state": False, "vertical": True},
+                                {"type": "tile", "entity": f"number.{prefix}_program_{slot}_power", "hide_state": False, "vertical": True},
+                                {"type": "tile", "entity": f"number.{prefix}_program_{slot}_soc", "hide_state": False, "vertical": True},
+                                {"type": "tile", "entity": f"switch.{prefix}_program_{slot}_grid_charge", "hide_state": True},
+                                {"type": "tile", "entity": f"switch.{prefix}_program_{slot}_gen_charge", "hide_state": True},
+                            ]
+                        ],
+                    },
+                ],
+            },
         ],
     }

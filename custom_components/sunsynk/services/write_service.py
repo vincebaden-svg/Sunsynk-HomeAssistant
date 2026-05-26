@@ -104,6 +104,7 @@ WRITE_TIERS: dict[str, int] = {
     "time4on": WRITE_TIER_2,
     "time5on": WRITE_TIER_2,
     "time6on": WRITE_TIER_2,
+    "peakAndVallery": WRITE_TIER_2,
 }
 
 

@@ -1,0 +1,156 @@
+type: vertical-stack
+cards:
+  - type: entities
+    title: System Mode Timer
+    entities:
+      - entity: switch.sunsynk_use_timer
+        name: Use Timer
+  - type: grid
+    columns: 6
+    square: false
+    cards:
+      # Header row
+      - type: markdown
+        content: "**Start**"
+      - type: markdown
+        content: "**Power**"
+      - type: markdown
+        content: "**SOC**"
+      - type: markdown
+        content: "**Grid**"
+      - type: markdown
+        content: "**Gen**"
+      - type: markdown
+        content: "**On**"
+      # Slot 1
+      - type: tile
+        entity: select.sunsynk_program_1_time
+        hide_state: false
+        vertical: true
+      - type: tile
+        entity: number.sunsynk_program_1_power
+        hide_state: false
+        vertical: true
+      - type: tile
+        entity: number.sunsynk_program_1_soc
+        hide_state: false
+        vertical: true
+      - type: tile
+        entity: switch.sunsynk_program_1_grid_charge
+        hide_state: true
+      - type: tile
+        entity: switch.sunsynk_program_1_gen_charge
+        hide_state: true
+      - type: tile
+        entity: switch.sunsynk_program_1_enabled
+        hide_state: true
+      # Slot 2
+      - type: tile
+        entity: select.sunsynk_program_2_time
+        hide_state: false
+        vertical: true
+      - type: tile
+        entity: number.sunsynk_program_2_power
+        hide_state: false
+        vertical: true
+      - type: tile
+        entity: number.sunsynk_program_2_soc
+        hide_state: false
+        vertical: true
+      - type: tile
+        entity: switch.sunsynk_program_2_grid_charge
+        hide_state: true
+      - type: tile
+        entity: switch.sunsynk_program_2_gen_charge
+        hide_state: true
+      - type: tile
+        entity: switch.sunsynk_program_2_enabled
+        hide_state: true
+      # Slot 3
+      - type: tile
+        entity: select.sunsynk_program_3_time
+        hide_state: false
+        vertical: true
+      - type: tile
+        entity: number.sunsynk_program_3_power
+        hide_state: false
+        vertical: true
+      - type: tile
+        entity: number.sunsynk_program_3_soc
+        hide_state: false
+        vertical: true
+      - type: tile
+        entity: switch.sunsynk_program_3_grid_charge
+        hide_state: true
+      - type: tile
+        entity: switch.sunsynk_program_3_gen_charge
+        hide_state: true
+      - type: tile
+        entity: switch.sunsynk_program_3_enabled
+        hide_state: true
+      # Slot 4
+      - type: tile
+        entity: select.sunsynk_program_4_time
+        hide_state: false
+        vertical: true
+      - type: tile
+        entity: number.sunsynk_program_4_power
+        hide_state: false
+        vertical: true
+      - type: tile
+        entity: number.sunsynk_program_4_soc
+        hide_state: false
+        vertical: true
+      - type: tile
+        entity: switch.sunsynk_program_4_grid_charge
+        hide_state: true
+      - type: tile
+        entity: switch.sunsynk_program_4_gen_charge
+        hide_state: true
+      - type: tile
+        entity: switch.sunsynk_program_4_enabled
+        hide_state: true
+      # Slot 5
+      - type: tile
+        entity: select.sunsynk_program_5_time
+        hide_state: false
+        vertical: true
+      - type: tile
+        entity: number.sunsynk_program_5_power
+        hide_state: false
+        vertical: true
+      - type: tile
+        entity: number.sunsynk_program_5_soc
+        hide_state: false
+        vertical: true
+      - type: tile
+        entity: switch.sunsynk_program_5_grid_charge
+        hide_state: true
+      - type: tile
+        entity: switch.sunsynk_program_5_gen_charge
+        hide_state: true
+      - type: tile
+        entity: switch.sunsynk_program_5_enabled
+        hide_state: true
+      # Slot 6
+      - type: tile
+        entity: select.sunsynk_program_6_time
+        hide_state: false
+        vertical: true
+      - type: tile
+        entity: number.sunsynk_program_6_power
+        hide_state: false
+        vertical: true
+      - type: tile
+        entity: number.sunsynk_program_6_soc
+        hide_state: false
+        vertical: true
+      - type: tile
+        entity: switch.sunsynk_program_6_grid_charge
+        hide_state: true
+      - type: tile
+        entity: switch.sunsynk_program_6_gen_charge
+        hide_state: true
+      - type: tile
+        entity: switch.sunsynk_program_6_enabled
+        hide_state: true

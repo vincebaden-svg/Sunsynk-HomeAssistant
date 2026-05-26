@@ -6,7 +6,7 @@ cards:
       - entity: switch.sunsynk_use_timer
         name: Use Timer
   - type: grid
-    columns: 6
+    columns: 5
     square: false
     cards:
       # Header row
@@ -20,8 +20,6 @@ cards:
         content: "**Grid**"
       - type: markdown
         content: "**Gen**"
-      - type: markdown
-        content: "**On**"
       # Slot 1
       - type: tile
         entity: select.sunsynk_program_1_time
@@ -40,9 +38,6 @@ cards:
         hide_state: true
       - type: tile
         entity: switch.sunsynk_program_1_gen_charge
-        hide_state: true
-      - type: tile
-        entity: switch.sunsynk_program_1_enabled
         hide_state: true
       # Slot 2
       - type: tile
@@ -63,9 +58,6 @@ cards:
       - type: tile
         entity: switch.sunsynk_program_2_gen_charge
         hide_state: true
-      - type: tile
-        entity: switch.sunsynk_program_2_enabled
-        hide_state: true
       # Slot 3
       - type: tile
         entity: select.sunsynk_program_3_time
@@ -84,9 +76,6 @@ cards:
         hide_state: true
       - type: tile
         entity: switch.sunsynk_program_3_gen_charge
-        hide_state: true
-      - type: tile
-        entity: switch.sunsynk_program_3_enabled
         hide_state: true
       # Slot 4
       - type: tile
@@ -107,9 +96,6 @@ cards:
       - type: tile
         entity: switch.sunsynk_program_4_gen_charge
         hide_state: true
-      - type: tile
-        entity: switch.sunsynk_program_4_enabled
-        hide_state: true
       # Slot 5
       - type: tile
         entity: select.sunsynk_program_5_time
@@ -129,9 +115,6 @@ cards:
       - type: tile
         entity: switch.sunsynk_program_5_gen_charge
         hide_state: true
-      - type: tile
-        entity: switch.sunsynk_program_5_enabled
-        hide_state: true
       # Slot 6
       - type: tile
         entity: select.sunsynk_program_6_time
@@ -150,7 +133,4 @@ cards:
         hide_state: true
       - type: tile
         entity: switch.sunsynk_program_6_gen_charge
-        hide_state: true
-      - type: tile
-        entity: switch.sunsynk_program_6_enabled
         hide_state: true

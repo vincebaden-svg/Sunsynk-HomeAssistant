@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-04-29
-last_updated: 2026-05-13
+last_updated: 2026-05-20
 project: sunsynk_BMAD
 project_key: NOKEY
 tracking_system: file-system
@@ -93,9 +93,10 @@ development_status:
   epic-7-retrospective: optional
 
   # ─── Epic 8: Auto-Provisioned Dashboard ───
-  epic-8: in-progress
+  epic-8: done
   8-1-implement-idempotent-dashboard-provisioner: done
   8-2-implement-dashboard-layout-with-quick-action-buttons: done
+  8-3-add-timer-view-to-dashboard: done
   epic-8-retrospective: optional
 
   # ─── Epic 9: Storage, Reliability & Resilience ───
@@ -105,14 +106,15 @@ development_status:
   epic-9-retrospective: optional
 
   # ─── Epic 10: Growth — Advanced Write Surface [Growth Phase] ───
-  epic-10: in-progress
+  epic-10: done
   10-1-implement-charging-schedule-entities: done
   10-2-implement-generator-aux-parameter-entities: done
   10-3-implement-sell-settings-with-two-step-confirmation: done
+  10-4-add-grid-gen-charge-and-use-timer-switches: done
   epic-10-retrospective: optional
 
   # ─── Epic 11: Post-Deployment Hardening ───
-  epic-11: in-progress
+  epic-11: done
   11-1-hybrid-api-strategy-and-expanded-endpoints: done
   11-2-write-support-with-correct-field-mappings: done
   11-3-configurable-pv-strings-and-expanded-sensors: done
@@ -121,4 +123,10 @@ development_status:
   11-6-fix-number-entities-read-current-state: done
   11-7-verify-ha-energy-dashboard-compatibility: done
   11-8-test-and-fix-automation-blueprints: done
+  11-9-fix-optionsflow-ha-2026-compatibility: done
+  11-10-add-cumulative-energy-totals: done
+  11-11-fix-battery-flow-direction: done
+  11-12-reconfigure-flow-for-credential-updates: done
+  11-13-auto-install-blueprints: done
+  11-14-polling-interval-minimum-1-minute: done
   epic-11-retrospective: optional

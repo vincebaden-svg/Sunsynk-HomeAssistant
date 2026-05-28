@@ -1,9 +1,10 @@
 {
   "domain": "sunsynk",
   "name": "Sunsynk Solar Inverter",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "config_flow": true,
   "documentation": "https://github.com/vincebaden-svg/Sunsynk-HomeAssistant",
+  "issue_tracker": "https://github.com/vincebaden-svg/Sunsynk-HomeAssistant/issues",
   "iot_class": "cloud_polling",
   "requirements": ["aiosqlite>=0.20.0"],
   "codeowners": ["@vincebaden-svg"],

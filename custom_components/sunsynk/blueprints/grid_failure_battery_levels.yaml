@@ -1,0 +1,142 @@
+blueprint:
+  name: "Sunsynk: Grid Failure Battery Level Alerts"
+  description: >
+    Sends Telegram notifications when the grid is disconnected AND battery SOC 
+    crosses thresholds (100%, 80%, 60%, 40%, 20%). Shows whether battery is 
+    charging or discharging. Also sends immediate alert on initial grid failure.
+  domain: automation
+  source_url: https://github.com/vincebaden-svg/Sunsynk-HomeAssistant
+  input:
+    chat_id:
+      name: Telegram Chat ID
+      description: "Your Telegram chat ID (can be negative for groups)"
+      selector:
+        number:
+          min: -9999999999999
+          max: 9999999999
+          mode: box
+
+trigger:
+  # Immediate notification on grid failure
+  - platform: event
+    event_type: sunsynk_grid_failure
+    id: grid_failure
+  
+  # Trigger when battery crosses each threshold
+  - platform: numeric_state
+    entity_id: sensor.sunsynk_battery_soc
+    below: 100
+    above: 99
+    id: soc_100
+  
+  - platform: numeric_state
+    entity_id: sensor.sunsynk_battery_soc
+    below: 80
+    above: 79
+    id: soc_80
+  
+  - platform: numeric_state
+    entity_id: sensor.sunsynk_battery_soc
+    below: 60
+    above: 59
+    id: soc_60
+  
+  - platform: numeric_state
+    entity_id: sensor.sunsynk_battery_soc
+    below: 40
+    above: 39
+    id: soc_40
+  
+  - platform: numeric_state
+    entity_id: sensor.sunsynk_battery_soc
+    below: 20
+    above: 19
+    id: soc_20
+
+condition:
+  # Only fire if grid is disconnected (except for initial grid_failure event)
+  - condition: or
+    conditions:
+      - condition: trigger
+        id: grid_failure
+      - condition: state
+        entity_id: binary_sensor.sunsynk_grid_connected
+        state: "off"
+
+action:
+  - choose:
+      # Initial grid failure message
+      - conditions:
+          - condition: trigger
+            id: grid_failure
+        sequence:
+          - variables:
+              battery_state: >
+                {% set power = states('sensor.sunsynk_battery_power') | float(0) %}
+                {% if power > 50 %}
+                  CHARGING
+                {% elif power < -50 %}
+                  DISCHARGING
+                {% else %}
+                  IDLE
+                {% endif %}
+          - action: telegram_bot.send_message
+            data:
+              chat_id: !input chat_id
+              message: >
+                ⚡ Grid Failure Detected
+                
+                Battery: {{ battery_state }}
+                Battery Level: {{ trigger.event.data.battery_soc | round(0) }}%
+                
+                Avoid heavy loads.
+      
+      # SOC threshold messages - only when grid is off
+      - conditions:
+          - condition: trigger
+            id: 
+              - soc_100
+              - soc_80
+              - soc_60
+              - soc_40
+              - soc_20
+        sequence:
+          - variables:
+              battery_state: >
+                {% set power = states('sensor.sunsynk_battery_power') | float(0) %}
+                {% if power > 50 %}
+                  CHARGING
+                {% elif power < -50 %}
+                  DISCHARGING
+                {% else %}
+                  IDLE
+                {% endif %}
+              soc_level: >
+                {% if trigger.id == 'soc_100' %}
+                  100
+                {% elif trigger.id == 'soc_80' %}
+                  80
+                {% elif trigger.id == 'soc_60' %}
+                  60
+                {% elif trigger.id == 'soc_40' %}
+                  40
+                {% elif trigger.id == 'soc_20' %}
+                  20
+                {% endif %}
+              emoji: >
+                {% if trigger.id == 'soc_100' %}
+                  🔋
+                {% elif trigger.id == 'soc_80' %}
+                  🔋
+                {% elif trigger.id == 'soc_60' %}
+                  ⚠️
+                {% elif trigger.id == 'soc_40' %}
+                  ⚠️
+                {% elif trigger.id == 'soc_20' %}
+                  🚨
+                {% endif %}
+          - action: telegram_bot.send_message
+            data:
+              chat_id: !input chat_id
+              message: >
+                {{ emoji }} Grid Failure - Battery {{ battery_state }}, Battery Level {{ soc_level }}%

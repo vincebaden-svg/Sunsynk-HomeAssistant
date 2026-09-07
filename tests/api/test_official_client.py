@@ -45,7 +45,7 @@ def test_build_text_to_sign_post():
         method="POST",
         path="/oauth/token",
         body_md5="abc123==",
-        app_key="204013305",
+        app_key="TEST_APP_KEY",
         nonce="test-nonce-uuid",
         content_type="application/json",
     )
@@ -55,7 +55,7 @@ def test_build_text_to_sign_post():
     assert lines[2] == "abc123=="           # Content-MD5
     assert lines[3] == "application/json"   # content-type
     assert lines[4] == ""                   # empty line
-    assert "x-ca-key:204013305" in lines
+    assert "x-ca-key:TEST_APP_KEY" in lines
     assert "x-ca-nonce:test-nonce-uuid" in lines
     assert lines[-1] == "/oauth/token"
     assert sig_headers == "x-ca-key,x-ca-nonce"
@@ -67,7 +67,7 @@ def test_build_text_to_sign_get():
         method="GET",
         path="/plants",
         body_md5="",
-        app_key="204013305",
+        app_key="TEST_APP_KEY",
         nonce="test-nonce-uuid",
         content_type="",
         query_params={"page": "1", "limit": "10"},
@@ -78,7 +78,7 @@ def test_build_text_to_sign_get():
     assert lines[2] == ""                   # Content-MD5 (empty for GET)
     assert lines[3] == ""                   # content-type (empty for GET)
     assert lines[4] == ""                   # empty line
-    assert "x-ca-key:204013305" in lines
+    assert "x-ca-key:TEST_APP_KEY" in lines
     assert "x-ca-nonce:test-nonce-uuid" in lines
     # URL should have sorted query params
     assert lines[-1] == "/plants?limit=10&page=1"
@@ -88,10 +88,10 @@ def test_build_text_to_sign_get():
 def test_client_initialization():
     """Test client initializes correctly."""
     client = OfficialApiClient(
-        app_key="204013305",
-        app_secret="zIQJeoPRXCjDV5anS5WIH7SQPAgdVaPm",
-        inverter_sn="2207197610",
+        app_key="TEST_APP_KEY",
+        app_secret="test_secret_placeholder",
+        inverter_sn="TEST123456",
     )
-    assert client._app_key == "204013305"
+    assert client._app_key == "TEST_APP_KEY"
     assert client._access_token is None
     assert client._use_hybrid is None

@@ -20,6 +20,7 @@ class SunsynkData:
     battery_power: float | None = None  # positive = charging, negative = discharging
     grid_power: float | None = None     # positive = import, negative = export
     load_power: float | None = None
+    generator_power: float | None = None  # positive = generator supplying power
 
     # Battery state
     battery_soc: float | None = None    # percent 0-100

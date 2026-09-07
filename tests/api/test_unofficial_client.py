@@ -16,14 +16,14 @@ def client():
     return UnofficialApiClient(
         username="test@example.com",
         password="testpassword",
-        inverter_sn="2207197610",
+        inverter_sn="TEST123456",
     )
 
 
 def test_client_initialization(client):
     """Test client initializes with correct attributes."""
     assert client._username == "test@example.com"
-    assert client._inverter_sn == "2207197610"
+    assert client._inverter_sn == "TEST123456"
     assert client._client is None
     assert client._authenticated_at is None
 

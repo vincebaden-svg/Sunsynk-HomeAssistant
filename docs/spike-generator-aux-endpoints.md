@@ -93,7 +93,7 @@ This opens a web UI at `http://localhost:8081` where you can see intercepted req
 ### Step 6: Record what you find
 
 For each request, note:
-- **URL** (e.g. `https://api.sunsynk.net/api/v1/inverter/2207197610/settings`)
+- **URL** (e.g. `https://api.sunsynk.net/api/v1/inverter/TEST123456/settings`)
 - **Method** (GET/POST/PUT)
 - **Request body** (the JSON payload)
 - **Response body** (the JSON response)

@@ -100,6 +100,14 @@ POWER_SENSORS: tuple[SunsynkSensorEntityDescription, ...] = (
         state_class=SensorStateClass.MEASUREMENT,
         value_fn=lambda data: data.load_power,
     ),
+    SunsynkSensorEntityDescription(
+        key="generator_power",
+        name="Generator Power",
+        native_unit_of_measurement=UnitOfPower.WATT,
+        device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda data: data.generator_power,
+    ),
 )
 
 # PV string sensors — created dynamically based on user config

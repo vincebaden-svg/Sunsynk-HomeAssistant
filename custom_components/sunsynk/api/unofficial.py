@@ -166,6 +166,7 @@ class UnofficialApiClient(SunsynkApiClient):
                 battery_soc=float(flow_data.get("soc", 0) or 0),
                 grid_power=float(flow_data.get("gridOrMeterPower", 0) or 0),
                 load_power=float(flow_data.get("loadOrEpsPower", 0) or 0),
+                generator_power=float(flow_data.get("genPower", 0) or 0) or None,
                 grid_connected=not bool(flow_data.get("existsGen", False))
                     and bool(flow_data.get("gridTo", True)),
                 pv_energy_today=float(gen_data.get("pv", 0) or 0),

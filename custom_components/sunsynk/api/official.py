@@ -631,6 +631,10 @@ class OfficialApiClient(SunsynkApiClient):
             flow_data.get("loadOrEpsPower")
         )
 
+        # Generator — from flow data only (no inverter-level endpoint)
+        generator_power_raw = _float(flow_data.get("genPower"))
+        generator_power = generator_power_raw if generator_power_raw else None
+
         # Grid connected — check grid frequency (< 40Hz = disconnected)
         grid_fac = _float(grid_data.get("fac"))
         if grid_fac > 0:
@@ -689,6 +693,7 @@ class OfficialApiClient(SunsynkApiClient):
             battery_capacity=battery_capacity,
             grid_power=grid_power,
             load_power=load_power,
+            generator_power=generator_power,
             grid_connected=grid_connected,
             pv_energy_today=pv_energy_today,
             battery_charge_today=battery_charge_today,

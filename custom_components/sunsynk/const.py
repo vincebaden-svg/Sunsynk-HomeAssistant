@@ -38,6 +38,7 @@ SENSOR_VALID_RANGES: dict[str, tuple[float, float]] = {
     "battery_soc": (0, 100),
     "grid_power": (-20000, 20000),
     "load_power": (0, 20000),
+    "generator_power": (0, 20000),
     # Energy sensors (kWh) — daily totals shouldn't exceed 200 kWh
     "pv_energy_today": (0, 200),
     "battery_charge_today": (0, 200),

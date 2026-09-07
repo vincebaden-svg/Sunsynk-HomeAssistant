@@ -22,7 +22,7 @@ def mock_client():
         pv_power=1500.0,
         battery_soc=85.0,
         grid_connected=True,
-        inverter_sn="2207197610",
+        inverter_sn="TEST123456",
     ))
     client.authenticate = AsyncMock()
     return client
@@ -35,7 +35,7 @@ def coordinator(hass, mock_client):
         hass=hass,
         client=mock_client,
         update_interval=timedelta(minutes=5),
-        inverter_sn="2207197610",
+        inverter_sn="TEST123456",
     )
 
 
@@ -68,7 +68,7 @@ async def test_reauthenticates_on_auth_error(coordinator, mock_client):
     # Next poll gets auth error, then succeeds after re-auth
     mock_client.fetch_all.side_effect = [
         SunsynkAuthError("Token expired"),
-        SunsynkData(pv_power=2000.0, battery_soc=90.0, inverter_sn="2207197610"),
+        SunsynkData(pv_power=2000.0, battery_soc=90.0, inverter_sn="TEST123456"),
     ]
     data = await coordinator._async_update_data()
 
